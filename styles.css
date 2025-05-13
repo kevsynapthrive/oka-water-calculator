@@ -1,0 +1,282 @@
+/* GENERAL LAYOUT */
+:root {
+  --oka-blue: #005f73;
+  --oka-teal: #0a9396;
+  --oka-light: #e9f5f4;
+  --oka-accent: #94d2bd;
+  --oka-dark: #001219;
+  --oka-wave: #cce3e9;
+}
+
+body {
+  font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+  margin: 0;
+  background: linear-gradient(to bottom, var(--oka-light), white);
+  color: var(--oka-dark);
+  line-height: 1.5;
+  padding: 0;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1rem 2rem;
+}
+
+/* HEADER BANNER */
+.header {
+  background: var(--oka-blue);
+  color: white;
+  padding: 2rem 1rem 1rem;
+  text-align: center;
+  position: relative;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 2.5rem;
+  color: white;
+}
+pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-x: auto;
+  background-color: #f8f8f8;
+  padding: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 0.95rem;
+  max-width: 100%;
+}
+
+
+h1 {
+  color: var(--oka-blue);
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+h2 {
+  color: var(--oka-teal);
+  border-bottom: 2px solid var(--oka-accent);
+  padding-bottom: 0.25rem;
+  margin-top: 2rem;
+}
+
+/* FORM */
+.form-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.form-column {
+  flex: 1 1 45%;
+  min-width: 300px;
+}
+
+.input-group {
+  margin-bottom: 1.25rem;
+}
+
+label {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.25rem;
+  font-size: 1rem;
+}
+
+input, select {
+  width: 100%;
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+select {
+  background-color: white;
+}
+
+/* BUTTON */
+button {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  background-color: var(--oka-blue);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s ease-in-out;
+}
+
+button:hover {
+  background-color: var(--oka-teal);
+}
+
+/* RESULTS + CHARTS */
+#resultsContainer {
+  margin-top: 2rem;
+  padding: 2rem 0;
+}
+
+#resultsContainer canvas {
+  max-width: 300px;
+  max-height: 300px;
+  width: 100% !important;
+  height: auto !important;
+  margin: 1rem 0;
+  display: block;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 0 8px rgba(0,0,0,0.05);
+}
+
+#resultsContainer > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+#resultsContainer > div > div {
+  flex: 1 1 45%;
+  min-width: 300px;
+}
+
+/* RESULT BANNERS */
+.result-banner {
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.result-banner.warning {
+  background-color: #fff3cd;
+  color: #856404;
+  border-left: 6px solid #ffc107;
+}
+
+.result-banner.info {
+  background-color: #d1ecf1;
+  color: #0c5460;
+  border-left: 6px solid #17a2b8;
+}
+
+.result-banner.success {
+  background-color: #d4edda;
+  color: #155724;
+  border-left: 6px solid #28a745;
+}
+
+/* CHECKBOX STYLING */
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.checkbox-group input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+/* HELP ICONS */
+label span[role="img"],
+label span[title] {
+  font-size: 0.9rem;
+  color: #555;
+  cursor: help;
+  user-select: none;
+}
+.affordability-bar-wrapper {
+  margin: 0.5rem 0 1rem;
+}
+
+.affordability-bar {
+  position: relative;
+  height: 20px;
+  background: #eee;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.affordability-bar-fill {
+  height: 100%;
+  transition: width 0.4s ease-in-out;
+}
+
+.affordability-labels {
+  font-size: 0.85rem;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.25rem;
+}
+.usage-comparison {
+  margin-top: 3rem;
+  padding: 1rem;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.usage-comparison h3 {
+  margin-bottom: 1rem;
+  color: var(--oka-teal);
+}
+
+.usage-comparison table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 1rem;
+}
+
+.usage-comparison th,
+.usage-comparison td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.usage-comparison th {
+  background-color: var(--oka-light);
+  color: var(--oka-dark);
+  font-weight: 600;
+}
+
+.usage-comparison tr:nth-child(even) td {
+  background-color: #f9f9f9;
+}
+
+.usage-comparison td {
+  color: #333;
+}
+
+.results-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+.results-section > div {
+  flex: 1 1 45%;
+  min-width: 300px;
+}
+label span[role="img"],
+label span[title],
+span[title] {
+  font-size: 0.9rem;
+  color: #555;
+  cursor: help;
+  user-select: none;
+}

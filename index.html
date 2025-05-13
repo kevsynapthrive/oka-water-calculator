@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Oka' Institute Water Pricing Calculator</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+  <style>
+    .form-section {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2rem;
+    }
+    .form-column {
+      flex: 1 1 45%;
+    }
+    .input-group {
+      margin-bottom: 1rem;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+    input, select {
+      width: 100%;
+      padding: 0.5rem;
+      font-size: 1rem;
+    }
+    h2 {
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 0.25rem;
+      margin-top: 2rem;
+    }
+    .cip-row {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .cip-row input, .cip-row select {
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Oka' Institute Water Pricing Calculator</h1>
+  </div>
+  <div class="container">
+    <p style="margin-top: -1rem; font-size: 1rem;">
+      </br> Developed in collaboration with <a href="https://www.okainstitute.org/" target="_blank" rel="noopener" style="color: #01658a; text-decoration: none; font-weight: bold;">The Oka' Institute</a> to support sustainable water rate setting for Oklahoma communities.
+    </p>
+
+<p style="max-width: 900px; margin-bottom: 2rem;">
+  This interactive tool allows you to compare <strong>flat</strong> and <strong>tiered</strong> water rate models to help your community plan sustainable pricing. It accounts for <strong>operating costs, debt payments, grant/subsidy offsets, reserve contributions,</strong> and optional <strong>capital improvement projects (CIPs)</strong>. The calculator estimates typical monthly bills, measures affordability, and verifies whether your rates meet annual revenue needs — with visual summaries, math breakdowns, and exportable results.
+</p>
+
+
+    <!-- SCENARIO DROPDOWN -->
+    <div class="input-group">
+      <label for="sampleSelector">
+        Load Sample Scenario
+        <span title="Preloaded examples for testing different community profiles.">ℹ️</span>
+      </label>
+      <select id="sampleSelector">
+        <option value="">-- Select a Scenario --</option>
+        <option value="smallTown">Small Rural System</option>
+        <option value="smallTownFlat">Small Rural System (Flat Only)</option>
+        <option value="growingSuburb">Growing Suburb</option>
+        <option value="agingSystem">Aging Infrastructure</option>
+        <option value="underTieredOnly">Under Tiered Only</option>
+        <option value="overTieredOnly">Over Tiered Only</option>
+      </select>
+    </div>
+
+    <!-- CUSTOMER + USAGE -->
+    <h2>Customer and Usage Information</h2>
+    <div class="form-section">
+      <div class="form-column">
+        <div class="input-group">
+          <label for="customers">Number of Customers <span title="Total number of customer accounts served.">ℹ️</span></label>
+          <input type="number" id="customers" value="1000" min="0">
+        </div>
+        <div class="input-group">
+          <label for="usage">Average Monthly Usage (gallons per customer) <span title="Typical monthly usage per customer in gallons.">ℹ️</span></label>
+          <input type="number" id="usage" value="5000" min="0">
+        </div>
+        <div class="input-group">
+  <label for="usageLevels">Compare Bills at Usage Levels (gallons/month)
+    <span title="Select usage levels to see how bills change at different consumption levels.">ℹ️</span>
+  </label>
+  <select id="usageLevels" multiple size="3">
+    <option value="2000" selected>2,000 gallons</option>
+    <option value="5000" selected>5,000 gallons</option>
+    <option value="10000">10,000 gallons</option>
+  </select>
+  <small>Hold Ctrl (or Cmd) to select multiple levels</small>
+</div>
+
+        <div class="input-group">
+  <label for="currentRate">Current Volumetric Rate ($ per 1,000 gallons) 
+    <span title="Your current water rate. Used to compare against the required rate.">ℹ️</span>
+  </label>
+  <input type="number" id="currentRate" value="0" min="0" step="0.01">
+</div>
+
+        <div class="input-group">
+          <label for="mhi">Median Household Income ($) <span title="Used to calculate affordability for the community.">ℹ️</span></label>
+          <input type="number" id="mhi" value="40000" min="0">
+        </div>
+      </div>
+
+      <div class="form-column">
+        <div class="input-group">
+          <label for="baseCharge">Monthly Base Charge per Customer ($) <span title="Fixed monthly charge, regardless of usage.">ℹ️</span></label>
+          <input type="number" id="baseCharge" value="10" min="0">
+        </div>
+
+        <div class="input-group checkbox-group">
+          <input type="checkbox" id="enableTiered">
+          <label for="enableTiered">
+            Enable Tiered Rate Model
+            <span title="Enable different pricing for low and high usage.">ℹ️</span>
+          </label>
+        </div>
+
+        <div id="tieredInputs">
+          <div class="input-group">
+            <label for="tier1Limit">Tier 1 Limit (gallons) <span title="Gallons allowed at the lower rate.">ℹ️</span></label>
+            <input type="number" id="tier1Limit" value="3000" min="0">
+          </div>
+          <div class="input-group">
+            <label for="tier1Rate">Tier 1 Rate ($ per 1,000 gallons) <span title="Rate charged for usage under the Tier 1 limit.">ℹ️</span></label>
+            <input type="number" id="tier1Rate" value="2.00" min="0">
+          </div>
+          <div class="input-group">
+            <label for="tier2Rate">Tier 2 Rate ($ per 1,000 gallons) <span title="Rate charged for usage above the Tier 1 limit.">ℹ️</span></label>
+            <input type="number" id="tier2Rate" value="4.00" min="0">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FINANCIAL PLANNING -->
+    <h2>Financial and Infrastructure Planning</h2>
+    <div class="form-section">
+      <div class="form-column">
+        <div class="input-group">
+          <label for="om">Yearly Cost to Operate Water System ($) <span title="Total operating and maintenance costs per year.">ℹ️</span></label>
+          <input type="number" id="om" value="250000" min="0">
+        </div>
+        <div class="input-group">
+          <label for="debt">Annual Debt Payments ($) <span title="Annual payments on past loans or bonds.">ℹ️</span></label>
+          <input type="number" id="debt" value="50000" min="0">
+        </div>
+        <div class="input-group">
+          <label for="grantOffset">Grant/Subsidy Offset ($) <span title="One-time grant or subsidy that reduces how much revenue needs to be collected from customers.">ℹ️</span></label>
+          <input type="number" id="grantOffset" value="0" min="0">
+        </div>
+      </div>
+
+      <div class="form-column">
+        <div class="input-group">
+          <label for="replacementCost">Estimated Cost to Replace Aging Infrastructure ($) <span title="Future cost of replacing system components.">ℹ️</span></label>
+          <input type="number" id="replacementCost" value="500000" min="0">
+        </div>
+<div class="input-group">
+  <label for="interest">Interest Rate on Reserves (%) 
+    <span title="Estimated annual return on reserve funds.">ℹ️</span>
+  </label>
+  <input type="range" id="interest" min="0" max="10" step="0.1" value="2" oninput="document.getElementById('interestValue').innerText = this.value">
+  <div style="text-align: right; font-size: 0.9rem;">Value: <span id="interestValue">2</span>%</div>
+</div>
+
+<div class="input-group">
+  <label for="lifespan">Asset Lifespan (Years) 
+    <span title="How long infrastructure is expected to last.">ℹ️</span>
+  </label>
+  <input type="range" id="lifespan" min="1" max="100" step="1" value="40" oninput="document.getElementById('lifespanValue').innerText = this.value">
+  <div style="text-align: right; font-size: 0.9rem;">Value: <span id="lifespanValue">40</span> years</div>
+</div>
+
+      </div>
+    </div>
+
+<!-- CAPITAL IMPROVEMENT PROJECTS -->
+<h2>Capital Improvement Projects</h2>
+<div class="input-group checkbox-group">
+  <input type="checkbox" id="enableCIP" >
+  <label for="enableCIP">Include CIP Projects in Calculation 
+    <span title="Toggle inclusion of capital improvement projects in revenue requirements.">ℹ️</span>
+  </label>
+</div>
+
+<!-- 🔽 Wrap the CIP fields here -->
+<div id="cipSection">
+  <p>Add upcoming capital projects. Choose whether to fund them via reserve contributions (sinking fund) or future debt.</p>
+  <div id="cipContainer">
+    <div class="cip-row">
+      <input type="number" placeholder="Cost ($)" class="cip-cost" min="0">
+      <input type="number" placeholder="Year Needed" class="cip-year" min="2025">
+      <select class="cip-method">
+        <option value="reserve">Reserve</option>
+        <option value="debt">Debt</option>
+      </select>
+    </div>
+  </div>
+  <button type="button" id="addCipRow">+ Add Project</button>
+</div>
+
+
+    <!-- CALCULATE BUTTON -->
+    <div style="margin-top: 2rem;">
+      <button id="compareButton">Calculate</button>
+    </div>
+
+    <!-- RESULTS CONTAINER -->
+    <div id="resultsContainer"></div>
+
+    <script type="module" src="calculator.js"></script>
+  </div>
+</body>
+</html>
