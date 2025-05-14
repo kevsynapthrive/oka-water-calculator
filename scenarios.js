@@ -1,3 +1,4 @@
+// src/scenarios.js
 export const scenarios = {
   smallTown: {
     customers: 500,
@@ -16,7 +17,11 @@ export const scenarios = {
     grantOffset: 0,
     includeCIP: false,
     usageLevels: ["2000", "5000"],
-    cipProjects: []
+    cipProjects: [],
+    enableLoans: true,
+    loanDetails: [
+      { amount: 100000, rate: 2.5, term: 20, description: "Main line replacement loan" }
+    ]
   },
   smallTownFlat: {
     customers: 500,
@@ -35,7 +40,9 @@ export const scenarios = {
     grantOffset: 5000,
     includeCIP: false,
     usageLevels: ["2000", "5000"],
-    cipProjects: []
+    cipProjects: [],
+    enableLoans: false,
+    loanDetails: []
   },
   growingSuburb: {
     customers: 2000,
@@ -55,8 +62,13 @@ export const scenarios = {
     includeCIP: true,
     usageLevels: ["2000", "5000", "10000"],
     cipProjects: [
-      { cost: 250000, year: 2026, method: "reserve" },
-      { cost: 300000, year: 2028, method: "debt" }
+      { cost: 250000, year: 2026, method: "reserve", description: "Elevated tank upgrade" },
+      { cost: 300000, year: 2028, method: "debt", description: "New distribution lines" }
+    ],
+    enableLoans: true,
+    loanDetails: [
+      { amount: 250000, rate: 3.0, term: 30, description: "Treatment plant expansion" },
+      { amount: 150000, rate: 2.0, term: 15, description: "Meter replacement loan" }
     ]
   },
   agingSystem: {
@@ -77,8 +89,12 @@ export const scenarios = {
     includeCIP: true,
     usageLevels: ["5000", "10000"],
     cipProjects: [
-      { cost: 100000, year: 2025, method: "reserve" },
-      { cost: 200000, year: 2027, method: "debt" }
+      { cost: 100000, year: 2025, method: "reserve", description: "Pump station rehab" },
+      { cost: 200000, year: 2027, method: "debt", description: "Pipe replacement phase 1" }
+    ],
+    enableLoans: true,
+    loanDetails: [
+      { amount: 80000, rate: 2.25, term: 25, description: "Old bond refinance" }
     ]
   },
   underFlatOnly: {
@@ -98,7 +114,11 @@ export const scenarios = {
     grantOffset: 0,
     includeCIP: false,
     usageLevels: ["2000", "5000", "10000"],
-    cipProjects: []
+    cipProjects: [],
+    enableLoans: true,
+    loanDetails: [
+      { amount: 150000, rate: 3.25, term: 35, description: "Infrastructure bond" }
+    ]
   },
   overFlatOnly: {
     customers: 1000,
@@ -117,45 +137,10 @@ export const scenarios = {
     grantOffset: 0,
     includeCIP: false,
     usageLevels: ["2000", "5000"],
-    cipProjects: []
-  },
-  underTieredOnly: {
-    customers: 500,
-    usage: 6000,
-    baseCharge: 8,
-    tier1Limit: 4000,
-    tier1Rate: 0.50,
-    tier2Rate: 1.00,
-    om: 300000,
-    debt: 70000,
-    replacementCost: 500000,
-    interest: 1.0,
-    lifespan: 30,
-    mhi: 40000,
-    currentRate: 1.0,
-    grantOffset: 0,
-    includeCIP: false,
-    usageLevels: ["2000", "5000", "10000"],
-    cipProjects: []
-  },
-  overTieredOnly: {
-    customers: 800,
-    usage: 4500,
-    baseCharge: 10,
-    tier1Limit: 2500,
-    tier1Rate: 3.50,
-    tier2Rate: 6.00,
-    om: 250000,
-    debt: 40000,
-    replacementCost: 300000,
-    interest: 2.5,
-    lifespan: 30,
-    mhi: 45000,
-    currentRate: 5.5,
-    grantOffset: 0,
-    includeCIP: false,
-    usageLevels: ["2000", "5000", "10000"],
-    cipProjects: []
+    cipProjects: [],
+    enableLoans: false,
+    loanDetails: []
   }
 };
+
 export const flatOnlyScenarios = ['underFlatOnly', 'overFlatOnly', 'smallTownFlat'];

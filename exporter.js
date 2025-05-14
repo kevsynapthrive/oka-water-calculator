@@ -13,18 +13,18 @@ export function exportResultsToCSV(model, inputs, calculations, extras = {}) {
 
   // CIP PROJECTS (Detailed)
   if (inputs['CIP Projects'] && inputs['CIP Projects'].length > 0) {
-    csv += '\nCIP PROJECTS\n"Cost ($)","Year Needed","Funding Method"\n';
-    inputs['CIP Projects'].forEach(project => {
-      csv += `"${project.cost}","${project.year}","${project.method}"\n`;
-    });
+csv += '\nCIP PROJECTS\n"Cost ($)","Year Needed","Funding Method","Description"\n';
+inputs['CIP Projects'].forEach(project => {
+  csv += `"${project.cost}","${project.year}","${project.method}","${project.description || ''}"\n`;
+});
   }
 
   // LOAN DETAILS (Detailed)
   if (inputs['Enable Loans'] && inputs['Loan Details'] && inputs['Loan Details'].length > 0) {
-    csv += '\nLOAN DETAILS\n"Amount ($)","Interest Rate (%)","Term (Years)"\n';
-    inputs['Loan Details'].forEach(loan => {
-      csv += `"${loan.amount}","${loan.rate}","${loan.term}"\n`;
-    });
+csv += '\nLOAN DETAILS\n"Amount ($)","Interest Rate (%)","Term (Years)","Description"\n';
+inputs['Loan Details'].forEach(loan => {
+  csv += `"${loan.amount}","${loan.rate}","${loan.term}","${loan.description || ''}"\n`;
+});
   }
 
   // SETTINGS

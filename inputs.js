@@ -5,6 +5,7 @@ export function getCipProjects() {
   const rows = document.querySelectorAll(".cip-row");
   return Array.from(rows)
     .map((row) => ({
+      description: row.querySelector(".cip-description")?.value || "",
       cost: parseFloat(row.querySelector(".cip-cost")?.value),
       year: parseInt(row.querySelector(".cip-year")?.value),
       method: row.querySelector(".cip-method")?.value,

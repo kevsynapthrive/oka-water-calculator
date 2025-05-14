@@ -146,9 +146,32 @@ if (inputs["Enable Loans"]) {
     annualCipCost,
     revenueNeed,
     exportResultsToCSV,
-    generateFlatMath: () =>
-      generateFlatMath(inputs, flatRate, flatBill, flatAffordability, reserveContribution, annualCipCost, revenueNeed, baseRevenue, remainingRevenue, totalGallons),
-    generateTieredMath: () =>
-      generateTieredMath(inputs, tiered?.bill ?? 0, tieredAffordability, tiered, reserveContribution, annualCipCost, revenueNeed),
+generateFlatMath: () =>
+  generateFlatMath(
+    inputs,
+    flatRate,
+    flatBill,
+    flatAffordability,
+    reserveContribution,
+    annualCipCost,
+    revenueNeed,
+    baseRevenue,
+    remainingRevenue,
+    totalGallons,
+    debt,
+    inputs["Loan Details"]
+  ),
+generateTieredMath: () =>
+  generateTieredMath(
+    inputs,
+    tiered?.bill ?? 0,
+    tieredAffordability,
+    tiered,
+    reserveContribution,
+    annualCipCost,
+    revenueNeed,
+    debt,
+    inputs["Loan Details"]
+  ),
   });
 }
