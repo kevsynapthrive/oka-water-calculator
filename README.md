@@ -6,49 +6,45 @@ An interactive web-based tool developed in collaboration with [The Oka' Institut
 
 ## 🚀 Features
 
-### ✅ Core Features (Fully Implemented)
+### ✅ Fully Implemented
 - **Flat vs. Tiered Rate Modeling**
-  Compare flat and two-tier rate structures with revenue validation
+  Compare flat and two-tier rate structures with revenue validation.
 
-- **Loan Amortization**
-  Model multiple loans with individual amounts, interest rates, and terms. Annual debt service is calculated using proper amortization formulas.
+- **Loan Amortization (Multi-Loan)**
+  Input multiple loans with individual amounts, interest rates, and terms. Annual debt service is computed using amortization.
 
 - **Capital Improvement Plan (CIP) Support**
-  Input future projects with reserve or debt funding and compute their annual impact
+  Add future projects with reserve or debt funding and calculate annualized cost.
 
 - **Affordability Metrics and Visualization**
-  Calculates % of Median Household Income (MHI) and shows visual affordability bar with color-coded guidance
+  Calculates % of Median Household Income (MHI) and displays color-coded affordability bar.
 
 - **Multi-Usage Bill Comparison**
-  Compare bill and affordability at 2,000 / 5,000 / 10,000 gallon levels
+  Compare bills and affordability at 2,000 / 5,000 / 10,000 gallon levels.
 
 - **Current Rate Comparison**
-  Enter your current rate to compare against calculated full-cost rate
+  See whether your current rate meets full-cost recovery needs.
 
 - **Sliders for Assumption Tuning**
-  Adjust interest rate and asset lifespan dynamically and see results in real time
+  Adjust interest rate and asset lifespan with responsive recalculation.
+
+- **Real-Time Interactivity**
+  All calculations respond immediately to input changes and scenario loading.
+
+- **Visual Revenue Breakdown**
+  Pie charts show how the revenue need is split (O&M, Debt, CIP, Reserve).
 
 - **Step-by-Step Math Breakdown**
-  Full transparency of calculations for both flat and tiered models
+  Transparent explanation of how the final rates and bills are calculated.
 
 - **Export to CSV**
-  Includes all inputs, outputs, loan and CIP details, and revenue breakdown
+  Exports all inputs, outputs, and calculations with loan and CIP detail.
 
-- **Preloaded Sample Scenarios**
-  Demonstrates typical system types (e.g., Small Town, Aging Infrastructure, Growing Suburb)
+- **Sample Scenarios**
+  Preloaded sample communities demonstrate a range of system profiles.
 
----
-
-## 📊 Calculation Logic
-
-The calculator follows full-cost pricing guidance from EPA, AWWA, and NRWA:
-
-- **Revenue Need = O&M + Debt + Reserves + CIP – Grants**
-- **Affordability = Annual Bill ÷ MHI**
-- **Volumetric Rate = (Revenue Need – Base Revenue) ÷ Gallons**
-- **Tiered Rates** use a two-block model: Tier 1 (low use), Tier 2 (high use)
-
-Loan payments are computed using amortization formulas for each loan entered.
+- **Styled Inline Buttons (🗑️ Remove)**
+  Loan and CIP sections now use small consistent trash buttons styled for readability.
 
 ---
 
@@ -61,9 +57,11 @@ calculator.js        → Main logic and calculations
 charts.js            → Revenue breakdown charts
 render.js            → DOM updates and results formatting
 inputs.js            → Input collection
-events.js            → UI event listeners and interaction
+events.js            → UI event listeners and interactivity
 loans.js             → Loan row handling and amortization
+cip.js               → Capital project row handling and annualization
 scenarios.js         → Sample system profiles
+scenarioLoader.js    → Loads scenarios into inputs and rows
 exporter.js          → CSV export logic
 mathDetails.js       → Step-by-step calculation explanations
 ```
@@ -74,21 +72,21 @@ mathDetails.js       → Step-by-step calculation explanations
 
 1. Open `index.html` in your browser
 2. Input your system data or load a sample scenario
-3. Adjust sliders or add loans/CIP projects
-4. Review the outputs including revenue sufficiency, affordability, and bill estimates
-5. Export results for board meetings or internal records
+3. Adjust sliders, add loans or CIP projects as needed
+4. Instantly review affordability, rate outputs, and pie charts
+5. Export results to CSV for records or presentations
 
 All functionality is client-side; no server setup required.
 
 ---
 
-## 🛠️ Roadmap
+## 🛠️ Roadmap (In Progress or Planned)
 
-Planned or partially implemented features:
-- O&M inflation over time
-- Per-tier revenue share validation
-- Additional affordability indicators (e.g. % for low-income households)
-- Inline tooltips for outputs
+- Breakout of bill into line-item components (O&M, CIP, Debt)
+- Revenue share validation across tiers
+- Inflation/growth modeling for O&M
+- Additional affordability metrics (low-income, poverty level)
+- Modular loan row creation to reduce code duplication
 
 ---
 
