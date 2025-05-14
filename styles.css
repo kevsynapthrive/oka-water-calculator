@@ -186,6 +186,27 @@ button:hover {
   height: 20px;
   cursor: pointer;
 }
+.current-rate-heading {
+  font-size: 1.5rem;
+  color: var(--oka-teal);
+  margin: 1.5rem auto 0.5rem;
+  text-align: center;
+  border-bottom: 2px solid var(--oka-accent);
+  max-width: 900px;
+  padding-bottom: 0.25rem;
+}
+
+.current-rate-summary {
+  background-color: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  margin: 0 auto 2rem;
+  max-width: 900px;
+}
+
+
+
 
 /* HELP ICONS */
 label span[role="img"],
@@ -195,6 +216,7 @@ label span[title] {
   cursor: help;
   user-select: none;
 }
+
 .affordability-bar-wrapper {
   margin: 0.5rem 0 1rem;
 }
@@ -210,6 +232,8 @@ label span[title] {
 .affordability-bar-fill {
   height: 100%;
   transition: width 0.4s ease-in-out;
+  max-width: 100%; /* ✅ prevents overflow if value is > 100% */
+  border-radius: 10px 0 0 10px;
 }
 
 .affordability-labels {
@@ -218,6 +242,7 @@ label span[title] {
   justify-content: space-between;
   margin-top: 0.25rem;
 }
+
 .usage-comparison {
   margin-top: 3rem;
   padding: 1rem;

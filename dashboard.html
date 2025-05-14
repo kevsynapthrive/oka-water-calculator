@@ -1,0 +1,102 @@
+<!-- Revised Dashboard-style Layout for index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Oka' Institute Water Pricing Calculator</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+  <style>
+    details summary {
+      font-size: 1.2rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 0.5rem;
+    }
+    .sticky-summary {
+      position: sticky;
+      top: 1rem;
+      background: #ffffff;
+      padding: 1rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      border-radius: 8px;
+      z-index: 999;
+      margin-bottom: 1rem;
+    }
+    .input-group input[type="number"] {
+      max-width: 200px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Oka' Institute Water Pricing Calculator</h1>
+  </div>
+  <div class="container">
+    <div class="sticky-summary">
+      <p><strong>Summary outputs will appear here after calculation.</strong></p>
+    </div>
+
+    <p style="margin-top: -1rem; font-size: 1rem;">
+      </br> Developed in collaboration with <a href="https://www.okainstitute.org/" target="_blank" rel="noopener" style="color: #01658a; text-decoration: none; font-weight: bold;">The Oka' Institute</a> to support sustainable water rate setting for Oklahoma communities.
+    </p>
+
+    <!-- RESULTS CONTAINER -->
+    <div id="resultsContainer"></div>
+
+    <!-- SCENARIO DROPDOWN -->
+    <div class="input-group">
+      <label for="sampleSelector">
+        Load Sample Scenario
+        <span title="Preloaded examples for testing different community profiles.">ℹ️</span>
+      </label>
+      <select id="sampleSelector">
+        <option value="">-- Select a Scenario --</option>
+        <option value="smallTown">Small Rural System</option>
+        <option value="smallTownFlat">Small Rural System (Flat Only)</option>
+        <option value="growingSuburb">Growing Suburb</option>
+        <option value="agingSystem">Aging Infrastructure</option>
+      </select>
+    </div>
+
+    <!-- INPUT SECTIONS WRAPPED IN DETAILS -->
+    <details open>
+      <summary>Customer and Usage Information</summary>
+      <div class="form-section"> <!-- keep original content here --> </div>
+    </details>
+
+    <details open>
+      <summary>Financial and Infrastructure Planning</summary>
+      <div class="form-section"> <!-- keep original content here --> </div>
+    </details>
+
+    <details open>
+      <summary>Capital Improvement Projects</summary>
+      <div class="input-group checkbox-group">
+        <input type="checkbox" id="enableCIP" >
+        <label for="enableCIP">Include CIP Projects in Calculation <span title="Toggle inclusion of capital improvement projects in revenue requirements.">ℹ️</span></label>
+      </div>
+
+      <div id="cipSection">
+        <p>Add upcoming capital projects. Choose whether to fund them via reserve contributions (sinking fund) or future debt.</p>
+        <div id="cipContainer">
+          <div class="cip-row">
+            <input type="number" placeholder="Cost ($)" class="cip-cost" min="0">
+            <input type="number" placeholder="Year Needed" class="cip-year" min="2025">
+            <select class="cip-method">
+              <option value="reserve">Reserve</option>
+              <option value="debt">Debt</option>
+            </select>
+          </div>
+        </div>
+        <button type="button" id="addCipRow">+ Add Project</button>
+      </div>
+    </details>
+
+    <script type="module" src="calculator.js"></script>
+  </div>
+</body>
+</html>
