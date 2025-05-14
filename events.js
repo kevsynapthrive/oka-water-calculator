@@ -3,6 +3,7 @@
 import { setTieredEnabled } from "./state.js";
 import { calculateComparison } from "./calculator.js";
 import { scenarios } from "./scenarios.js";
+import { setupLoanToggle, setupAddLoanRow } from "./loans.js";
 
 function debounce(func, delay = 300) {
   let timeout;
@@ -23,7 +24,8 @@ document.addEventListener("DOMContentLoaded", () => {
   setupScenarioLoader();
   triggerInitialCipYear();
   debouncedCalculate(); // Automatically run once when the page loads
-
+  setupLoanToggle(debouncedCalculate);
+  setupAddLoanRow();
 });
 
 function setupTieredToggle() {

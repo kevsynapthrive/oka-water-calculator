@@ -6,7 +6,8 @@ export function exportResultsToCSV(model, inputs, calculations, extras = {}) {
   csv += 'INPUTS\n';
   for (const [key, value] of Object.entries(inputs)) {
     if (model === 'flat' && key.startsWith('Tier')) continue;
-    if (key === 'CIP Projects') continue; // We'll handle separately
+    if (key === 'CIP Projects') continue;
+    if (key === 'Loan Details') continue;
     csv += `"${key}","${value}"\n`;
   }
 
@@ -18,22 +19,30 @@ export function exportResultsToCSV(model, inputs, calculations, extras = {}) {
     });
   }
 
+  // LOAN DETAILS (Detailed)
+  if (inputs['Enable Loans'] && inputs['Loan Details'] && inputs['Loan Details'].length > 0) {
+    csv += '\nLOAN DETAILS\n"Amount ($)","Interest Rate (%)","Term (Years)"\n';
+    inputs['Loan Details'].forEach(loan => {
+      csv += `"${loan.amount}","${loan.rate}","${loan.term}"\n`;
+    });
+  }
+
   // SETTINGS
   csv += '\nSETTINGS\n';
   csv += `"CIP Projects Included","${inputs['Include CIP Projects'] ? 'Yes' : 'No'}"\n`;
   csv += `"Tiered Model Enabled","${model === 'tiered' ? 'Yes' : 'No'}"\n`;
+  csv += `"Loan Amortization Enabled","${inputs['Enable Loans'] ? 'Yes' : 'No'}"\n`;
 
-// REVENUE REQUIREMENTS
-if (extras.revenueNeed !== undefined) {
-  csv += '\nREVENUE REQUIREMENTS\n';
-  csv += `"Operating Costs ($)","${inputs['Annual Operating Costs ($)'] || '0'}"\n`;
-  csv += `"Debt Payments ($)","${inputs['Annual Debt Payments ($)'] || '0'}"\n`;
-  csv += `"Reserve Contribution ($)","${extras.reserveContribution?.toFixed(2) || '0'}"\n`;
-  csv += `"CIP Annual Cost ($)","${extras.annualCipCost?.toFixed(2) || '0'}"\n`;
-  csv += `"Grant/Subsidy Offset ($)","${inputs['Grant/Subsidy Offset ($)'] || '0'}"\n`;
-  csv += `"Total Revenue Need ($)","${extras.revenueNeed.toFixed(2)}"\n`;
-}
-
+  // REVENUE REQUIREMENTS
+  if (extras.revenueNeed !== undefined) {
+    csv += '\nREVENUE REQUIREMENTS\n';
+    csv += `"Operating Costs ($)","${inputs['Annual Operating Costs ($)'] || '0'}"\n`;
+    csv += `"Debt Payments (Computed)","${extras.debt?.toFixed(2) || inputs['Annual Debt Payments ($)'] || '0'}"\n`;
+    csv += `"Reserve Contribution ($)","${extras.reserveContribution?.toFixed(2) || '0'}"\n`;
+    csv += `"CIP Annual Cost ($)","${extras.annualCipCost?.toFixed(2) || '0'}"\n`;
+    csv += `"Grant/Subsidy Offset ($)","${inputs['Grant/Subsidy Offset ($)'] || '0'}"\n`;
+    csv += `"Total Revenue Need ($)","${extras.revenueNeed.toFixed(2)}"\n`;
+  }
 
   // AFFORDABILITY
   if (extras.affordability !== undefined) {

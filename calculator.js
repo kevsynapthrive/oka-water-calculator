@@ -6,6 +6,7 @@ import { generateFlatMath, generateTieredMath } from "./mathDetails.js";
 import { setTieredEnabled, isTieredEnabled } from "./state.js";
 import { scenarios } from "./scenarios.js";
 import "./events.js"; // handles all DOM setup
+import { calculateTotalDebt } from "./loans.js";
 
 export function calculateComparison() {
   const inputs = collectInputs();
@@ -15,25 +16,33 @@ export function calculateComparison() {
     return;
   }
 
-  const {
-    "Number of Customers": customers,
-    "Average Monthly Usage (gallons per customer)": usage,
-    "Monthly Base Charge per Customer ($)": baseCharge,
-    "Annual Operating Costs ($)": om,
-    "Annual Debt Payments ($)": debt,
-    "Future Asset Replacement Cost ($)": replacementCost,
-    "Median Household Income ($)": mhi,
-    "Interest Rate on Reserves (%)": interest,
-    "Average Asset Lifespan (Years)": lifespan,
-    "Grant/Subsidy Offset ($)": grantOffset,
-    "Tier 1 Usage Limit (gallons)": tier1Limit,
-    "Tier 1 Rate ($ per 1,000 gallons)": tier1Rate,
-    "Tier 2 Rate ($ per 1,000 gallons)": tier2Rate,
-    "Current Volumetric Rate ($ per 1,000 gallons)": currentRate,
-    "Usage Levels": usageLevels,
-    "Include CIP Projects": includeCIP,
-    "CIP Projects": cipProjects
-  } = inputs;
+const {
+  "Number of Customers": customers,
+  "Average Monthly Usage (gallons per customer)": usage,
+  "Monthly Base Charge per Customer ($)": baseCharge,
+  "Annual Operating Costs ($)": om,
+  "Future Asset Replacement Cost ($)": replacementCost,
+  "Median Household Income ($)": mhi,
+  "Interest Rate on Reserves (%)": interest,
+  "Average Asset Lifespan (Years)": lifespan,
+  "Grant/Subsidy Offset ($)": grantOffset,
+  "Tier 1 Usage Limit (gallons)": tier1Limit,
+  "Tier 1 Rate ($ per 1,000 gallons)": tier1Rate,
+  "Tier 2 Rate ($ per 1,000 gallons)": tier2Rate,
+  "Current Volumetric Rate ($ per 1,000 gallons)": currentRate,
+  "Usage Levels": usageLevels,
+  "Include CIP Projects": includeCIP,
+  "CIP Projects": cipProjects
+} = inputs;
+
+// ✅ Then handle debt separately
+let debt = 0;
+if (inputs["Enable Loans"]) {
+  debt = calculateTotalDebt(inputs["Loan Details"]);
+} else {
+  debt = inputs["Annual Debt Payments ($)"];
+}
+
 
   const reserveContribution =
     (replacementCost * (interest / 100)) / (Math.pow(1 + interest / 100, lifespan) - 1);

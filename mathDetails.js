@@ -1,15 +1,27 @@
-export function generateFlatMath(inputs, flatRate, flatBill, affordability, reserveContribution, annualCipCost, revenueNeed, baseRevenue, remainingRevenue, totalGallons) {
+export function generateFlatMath(inputs, flatRate, flatBill, affordability, reserveContribution, annualCipCost, revenueNeed, baseRevenue, remainingRevenue, totalGallons, debt, loans) {
   const baseCharge = parseFloat(inputs['Monthly Base Charge per Customer ($)']);
   const usage = parseFloat(inputs['Average Monthly Usage (gallons per customer)']);
   const customers = parseFloat(inputs['Number of Customers']);
   const mhi = parseFloat(inputs['Median Household Income ($)']);
+  const om = inputs['Annual Operating Costs ($)'];
 
   const cipIncluded = annualCipCost > 0;
+
+  const debtLine = (loans && loans.length > 0)
+    ? loans.map((loan, i) =>
+        `Loan ${i + 1} = (${loan.amount.toLocaleString()} × ${loan.rate}%) ÷ [1 - (1 + ${loan.rate / 100})^(-${loan.term})]`
+      ).join(" + ") + ` = $${debt.toFixed(2)}`
+    : `$${inputs['Annual Debt Payments ($)']} (flat)`;
+
   const revenueLine = cipIncluded
     ? `2. Total Revenue Requirement:
-   = O&M + Debt + Reserve + CIP = ${inputs['Annual Operating Costs ($)']} + ${inputs['Annual Debt Payments ($)']} + ${reserveContribution.toFixed(2)} + ${annualCipCost.toFixed(2)} = $${revenueNeed.toFixed(2)}`
+   = O&M + Debt + Reserve + CIP
+   = ${om} + ${debtLine} + ${reserveContribution.toFixed(2)} + ${annualCipCost.toFixed(2)}
+   = $${revenueNeed.toFixed(2)}`
     : `2. Total Revenue Requirement:
-   = O&M + Debt + Reserve = ${inputs['Annual Operating Costs ($)']} + ${inputs['Annual Debt Payments ($)']} + ${reserveContribution.toFixed(2)} = $${revenueNeed.toFixed(2)}`;
+   = O&M + Debt + Reserve
+   = ${om} + ${debtLine} + ${reserveContribution.toFixed(2)}
+   = $${revenueNeed.toFixed(2)}`;
 
   return `Flat Rate Model – Step-by-Step Math
 
@@ -39,14 +51,25 @@ ${revenueLine}
 }
 
 
-export function generateTieredMath(inputs, tieredBill, affordability, breakdown, reserveContribution, annualCipCost, revenueNeed) {
+export function generateTieredMath(inputs, tieredBill, affordability, breakdown, reserveContribution, annualCipCost, revenueNeed, debt, loans) {
   const cipIncluded = annualCipCost > 0;
+  const om = inputs['Annual Operating Costs ($)'];
+
+  const debtLine = (loans && loans.length > 0)
+    ? loans.map((loan, i) =>
+        `Loan ${i + 1} = (${loan.amount.toLocaleString()} × ${loan.rate}%) ÷ [1 - (1 + ${loan.rate / 100})^(-${loan.term})]`
+      ).join(" + ") + ` = $${debt.toFixed(2)}`
+    : `$${inputs['Annual Debt Payments ($)']} (flat)`;
 
   const revenueLine = cipIncluded
-    ? `2. Total Revenue Requirement:
-   = O&M + Debt + Reserve + CIP = ${inputs['Annual Operating Costs ($)']} + ${inputs['Annual Debt Payments ($)']} + ${reserveContribution.toFixed(2)} + ${annualCipCost.toFixed(2)} = $${revenueNeed.toFixed(2)}`
-    : `2. Total Revenue Requirement:
-   = O&M + Debt + Reserve = ${inputs['Annual Operating Costs ($)']} + ${inputs['Annual Debt Payments ($)']} + ${reserveContribution.toFixed(2)} = $${revenueNeed.toFixed(2)}`;
+    ? `5. Total Revenue Requirement:
+   = O&M + Debt + Reserve + CIP
+   = ${om} + ${debtLine} + ${reserveContribution.toFixed(2)} + ${annualCipCost.toFixed(2)}
+   = $${revenueNeed.toFixed(2)}`
+    : `5. Total Revenue Requirement:
+   = O&M + Debt + Reserve
+   = ${om} + ${debtLine} + ${reserveContribution.toFixed(2)}
+   = $${revenueNeed.toFixed(2)}`;
 
   return `Tiered Rate Model – Step-by-Step Math
 
@@ -61,9 +84,6 @@ export function generateTieredMath(inputs, tieredBill, affordability, breakdown,
 
 4. Tier 2 Cost:
    = (${breakdown.tier2Usage} × $${inputs['Tier 2 Rate ($ per 1,000 gallons)']}) ÷ 1,000 = $${(breakdown.tier2Usage * breakdown.tier2Rate / 1000).toFixed(2)}
-
-5. Total Volumetric:
-   = $${breakdown.volumetricCost.toFixed(2)}
 
 ${revenueLine}
 

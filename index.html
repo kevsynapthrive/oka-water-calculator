@@ -182,7 +182,22 @@
 </div>
 
       </div>
+      
     </div>
+<!-- 💳 Loan Amortization Section -->
+ <h2>Loan Amortization</h2>
+<div class="input-group checkbox-group">
+  <input type="checkbox" id="enableLoans">
+  <label for="enableLoans">Include Detailed Loan Amortization 
+    <span title="Model multiple loans with individual terms and interest rates.">ℹ️</span>
+  </label>
+</div>
+
+<div id="loanSection" style="display: none; margin-bottom: 2rem;">
+  <p>Enter each loan below. The calculator will compute the annual debt service using amortization.</p>
+  <div id="loanContainer"></div>
+  <button type="button" id="addLoanRow">+ Add Loan</button>
+</div>
 
 <!-- CAPITAL IMPROVEMENT PROJECTS -->
 <h2>Capital Improvement Projects</h2>

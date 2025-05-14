@@ -205,6 +205,36 @@ button:hover {
   max-width: 900px;
 }
 
+.loan-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.loan-row .input-group {
+  flex: 1 1 200px;
+  min-width: 150px;
+}
+.loan-row,
+.cip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.loan-row .input-group,
+.cip-row .input-group {
+  flex: 1 1 200px;
+  min-width: 150px;
+}
+
+#loanContainer,
+#cipContainer {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
 
 
 

@@ -1,4 +1,5 @@
 // src/inputs.js
+import { getLoanDetails } from "./loans.js";
 
 export function getCipProjects() {
   const rows = document.querySelectorAll(".cip-row");
@@ -13,23 +14,55 @@ export function getCipProjects() {
 
 export function collectInputs() {
   return {
-    "Number of Customers": parseFloat(document.getElementById("customers").value),
-    "Average Monthly Usage (gallons per customer)": parseFloat(document.getElementById("usage").value),
-    "Monthly Base Charge per Customer ($)": parseFloat(document.getElementById("baseCharge").value),
-    "Annual Operating Costs ($)": parseFloat(document.getElementById("om").value),
-    "Annual Debt Payments ($)": parseFloat(document.getElementById("debt").value),
-    "Future Asset Replacement Cost ($)": parseFloat(document.getElementById("replacementCost").value),
-    "Median Household Income ($)": parseFloat(document.getElementById("mhi").value),
-    "Interest Rate on Reserves (%)": parseFloat(document.getElementById("interest").value),
-    "Average Asset Lifespan (Years)": parseFloat(document.getElementById("lifespan").value),
-    "Grant/Subsidy Offset ($)": parseFloat(document.getElementById("grantOffset").value),
-    "Tier 1 Usage Limit (gallons)": parseFloat(document.getElementById("tier1Limit").value),
-    "Tier 1 Rate ($ per 1,000 gallons)": parseFloat(document.getElementById("tier1Rate").value),
-    "Tier 2 Rate ($ per 1,000 gallons)": parseFloat(document.getElementById("tier2Rate").value),
-    "Current Volumetric Rate ($ per 1,000 gallons)": parseFloat(document.getElementById("currentRate").value),
-    "Usage Levels": Array.from(document.getElementById("usageLevels").selectedOptions).map((opt) => parseInt(opt.value)),
+    "Number of Customers": parseFloat(
+      document.getElementById("customers").value
+    ),
+    "Average Monthly Usage (gallons per customer)": parseFloat(
+      document.getElementById("usage").value
+    ),
+    "Monthly Base Charge per Customer ($)": parseFloat(
+      document.getElementById("baseCharge").value
+    ),
+    "Annual Operating Costs ($)": parseFloat(
+      document.getElementById("om").value
+    ),
+    "Annual Debt Payments ($)": parseFloat(
+      document.getElementById("debt").value
+    ),
+    "Future Asset Replacement Cost ($)": parseFloat(
+      document.getElementById("replacementCost").value
+    ),
+    "Median Household Income ($)": parseFloat(
+      document.getElementById("mhi").value
+    ),
+    "Interest Rate on Reserves (%)": parseFloat(
+      document.getElementById("interest").value
+    ),
+    "Average Asset Lifespan (Years)": parseFloat(
+      document.getElementById("lifespan").value
+    ),
+    "Grant/Subsidy Offset ($)": parseFloat(
+      document.getElementById("grantOffset").value
+    ),
+    "Tier 1 Usage Limit (gallons)": parseFloat(
+      document.getElementById("tier1Limit").value
+    ),
+    "Tier 1 Rate ($ per 1,000 gallons)": parseFloat(
+      document.getElementById("tier1Rate").value
+    ),
+    "Tier 2 Rate ($ per 1,000 gallons)": parseFloat(
+      document.getElementById("tier2Rate").value
+    ),
+    "Current Volumetric Rate ($ per 1,000 gallons)": parseFloat(
+      document.getElementById("currentRate").value
+    ),
+    "Usage Levels": Array.from(
+      document.getElementById("usageLevels").selectedOptions
+    ).map((opt) => parseInt(opt.value)),
     "Include CIP Projects": document.getElementById("enableCIP").checked,
-    "CIP Projects": getCipProjects()
+    "CIP Projects": getCipProjects(),
+    "Enable Loans": document.getElementById("enableLoans").checked,
+    "Loan Details": getLoanDetails(),
   };
 }
 
@@ -40,7 +73,10 @@ export function validateInputs(inputs) {
     if (Array.isArray(value)) continue;
 
     if (isNaN(value)) {
-      return { valid: false, message: `Please enter a valid number for: ${key}` };
+      return {
+        valid: false,
+        message: `Please enter a valid number for: ${key}`,
+      };
     }
 
     if (value < 0) {
