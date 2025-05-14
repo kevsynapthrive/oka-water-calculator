@@ -1,99 +1,130 @@
 # 💧 Oka' Institute Water Pricing Calculator
 
-An interactive web-based tool developed in collaboration with [The Oka' Institute](https://www.okainstitute.org/) to support sustainable water rate setting for rural and small communities. This calculator helps decision-makers align water rates with full-cost recovery and affordability benchmarks, using visual outputs and built-in financial logic.
+An educational, web-based water rate calculator developed in partnership with [The Oka' Institute](https://www.okainstitute.org/) to support full-cost water pricing and affordability planning for rural Oklahoma communities.
+
+This tool helps decision-makers explore rate structures that cover operating costs, capital improvements, debt, and reserves—while monitoring affordability through visual outputs and clear metrics.
 
 ---
 
-## 🚀 Features
+## 🚀 Key Features
 
-### ✅ Tier 1 Goals — Fully Implemented
-- **Flat vs. Tiered Rate Modeling**  
-  Compare two-part and block-rate pricing structures
+### ✅ Fully Implemented
+- **📊 Flat & Tiered Rate Models**
+  - Two-part and block-rate comparisons with revenue sufficiency checks
 
-- **Current Rate Comparison**  
-  Input your existing volumetric rate and see how it compares to the required rate, with bill and affordability metrics
+- **📈 Current Rate vs. Required Rate**
+  - Visual alert when your current rate under- or over-recovers costs
 
-- **Multi-Usage Bill Comparison**  
-  Visualize bill impacts for low, medium, and high usage customers (2k, 5k, 10k gallons), with affordability flags
+- **🏠 Multi-Usage Bill Comparison**
+  - See bill impacts at 2k, 5k, and 10k gallon/month usage levels (flat & tiered)
 
-- **Affordability Visualization**  
-  Color-coded bar and emoji indicators show affordability as % of Median Household Income (MHI), aligned with EPA guidance
+- **🎯 Affordability Visualization**
+  - % of Median Household Income (MHI), color-coded bar, and emoji status (🟢🟡🔴)
 
-- **Sliders for Key Assumptions**  
-  Adjust interest rate and asset lifespan using interactive sliders and see real-time impact on required rates
+- **🎚️ Sliders for Interest Rate & Lifespan**
+  - Explore how reserve funding needs shift with assumptions
 
-- **Tooltips on Inputs and Outputs**  
-  Inline `ℹ️` icons explain each calculation and result to support educational use
+- **🏗️ Capital Improvement Plan (CIP) Support**
+  - Add future infrastructure projects with reserve or debt funding
 
-- **Capital Improvement Plan (CIP) Support**  
-  Add future capital projects with reserve or debt funding methods
+- **📘 Step-by-Step Math**
+  - Transparent calculations for flat and tiered models
 
-- **Step-by-Step Math Breakdown**  
-  Show full calculation breakdown for both flat and tiered models
+- **📤 CSV Export**
+  - Download all inputs, outputs, and calculations
 
-- **Export to CSV**  
-  Save all inputs, outputs, and summary calculations for recordkeeping or board review
+- **🧪 Sample Scenarios**
+  - Preloaded system profiles (e.g., Small Town, Aging System)
 
-- **Sample Scenarios**  
-  Load predefined system profiles (e.g., Small Town, Aging Infrastructure, etc.)
+- **🧠 Tooltips for Inputs & Outputs**
+  - Helps non-technical users understand each component
 
 ---
 
 ## 📊 Calculation Logic
 
-The calculator is grounded in EPA, AWWA, and NRWA guidance on full-cost pricing:
+Based on EPA, AWWA, and NRWA guidance for full-cost pricing:
 
-- Revenue requirement = O&M + Debt Service + Capital Reserve + CIP – Grant Offset
-- Affordability = Annual Household Bill ÷ MHI
-- Flat Rate = Remaining revenue ÷ annual gallons sold
-- Tiered Rates use a two-block structure: Tier 1 + Tier 2 based on usage limit
+- **Revenue Requirement =**  
+  `O&M + Debt + Capital Reserve + CIP – Grants`
+
+- **Flat Rate =**  
+  `Remaining Revenue / Annual Gallons Sold`
+
+- **Tiered Rates =**  
+  Two-block structure (Tier 1 & Tier 2 based on usage threshold)
+
+- **Affordability =**  
+  `(Annual Household Bill / Median Income) × 100%`
+
+---
+
+## 🔮 In Progress or Planned
+
+- [ ] **💳 Loan Amortization by Entry**  
+  Model multiple debts with amount, term, and rate
+
+- [ ] **📊 Usage Distribution Analysis**  
+  Flag revenue shortfall risk in skewed tier structures
+
+- [ ] **📈 O&M Growth Over Time**  
+  Project costs with inflation for multi-year scenarios
+
+- [ ] **🧩 Modular Layout Updates**  
+  Reduce scrolling and improve mobile readability
 
 ---
 
 ## 📁 Project Structure
 
 ```
-/calculator.js       → Core logic, charting, results display
-/index.html          → UI markup and layout
-/styles.css          → Theme and responsive design
-/exporter.js         → CSV export logic
-/mathdetails.js      → Step-by-step math breakdowns
-/scenarios.js        → Preloaded system inputs
-/favicon.ico         → Oka' Institute branding icon
+/index.html         → Main layout (dashboard style)
+/styles.css         → Theme and responsive design
+/calculator.js      → Core logic and calculations
+/render.js          → Result display and charts
+/inputs.js          → Input parsing and validation
+/events.js          → DOM events and interactivity
+/mathDetails.js     → Step-by-step math explanations
+/exporter.js        → CSV export logic
+/scenarios.js       → Sample system profiles
+/charts.js          → Pie chart rendering
+/utils.js           → Helper functions
+/favicon.ico        → Branding icon
 ```
 
 ---
 
-## 📦 Usage
+## 🧪 Getting Started
 
-### Local Development
-
+### 🔍 Local Development
 1. Clone the repo:
    ```bash
    git clone https://github.com/YOUR_USERNAME/oka-water-calculator.git
+   cd oka-water-calculator
    ```
 
-2. Open `index.html` in your browser:
+2. Open `index.html` in a browser:
    ```bash
    open index.html
    ```
-
-3. All logic is client-side (JavaScript/HTML/CSS only). No server setup needed.
+   *(No build tools or server setup needed)*
 
 ---
 
 ## 🏛️ About The Oka' Institute
 
-This tool is part of The Oka' Institute's mission to advance sustainable water management practices across Oklahoma and the region. Visit [okainstitute.org](https://www.okainstitute.org/) to learn more.
+The Oka' Institute is committed to long-term water sustainability in Oklahoma. This tool supports rural systems in planning rates that are both affordable and financially sustainable.  
+Learn more at [okainstitute.org](https://www.okainstitute.org/)
 
 ---
 
 ## 📬 Contributing / Feedback
 
-Want to improve the calculator or request features? Open an issue or submit a pull request. All feedback that supports intuitive, affordable, and transparent rate planning is welcome.
+Questions, suggestions, or improvements?  
+Open an issue or submit a pull request — feedback is welcome!
 
 ---
 
 ## 🛡️ License
 
-This project is licensed under the MIT License.
+MIT License — free to use and modify with attribution.
