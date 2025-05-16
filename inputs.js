@@ -40,7 +40,7 @@ export function collectInputs() {
 
 export function validateInputs(inputs) {
   for (const [key, value] of Object.entries(inputs)) {
-    if (key === "CIP Projects" || key === "Loan Details") continue;
+    if (["Community Name", "CIP Projects", "Loan Details"].includes(key)) continue;
     if (typeof value === "boolean") continue;
     if (Array.isArray(value)) continue;
 
