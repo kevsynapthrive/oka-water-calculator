@@ -1,11 +1,12 @@
 import { collectInputs, validateInputs } from "./inputs.js";
-import { calculateAnnualCipCost, calculateTieredBill } from "./calculations.js";
+import { calculateAnnualCipCost } from "./calculations.js";
+import { calculateTieredBill } from "./tiers.js";
 import { renderResults, renderUsageComparisonTable } from "./render.js";
 import { exportResultsToCSV } from "./exporter.js";
-import { generateFlatMath, generateTieredMath } from "./mathDetails.js";
+import { generateTieredMath } from "./mathDetails.js";
 import { setTieredEnabled, isTieredEnabled } from "./state.js";
 import { scenarios } from "./scenarios.js";
-import "./events.js"; // handles all DOM setup
+import "./events.js";
 import { calculateTotalDebt } from "./loans.js";
 
 export function calculateComparison() {
@@ -16,32 +17,30 @@ export function calculateComparison() {
     return;
   }
 
-const {
-  "Number of Customers": customers,
-  "Average Monthly Usage (gallons per customer)": usage,
-  "Monthly Base Charge per Customer ($)": baseCharge,
-  "Annual Operating Costs ($)": om,
-  "Future Asset Replacement Cost ($)": replacementCost,
-  "Median Household Income ($)": mhi,
-  "Interest Rate on Reserves (%)": interest,
-  "Average Asset Lifespan (Years)": lifespan,
-  "Grant/Subsidy Offset ($)": grantOffset,
-  "Tier 1 Usage Limit (gallons)": tier1Limit,
-  "Tier 1 Rate ($ per 1,000 gallons)": tier1Rate,
-  "Tier 2 Rate ($ per 1,000 gallons)": tier2Rate,
-  "Current Volumetric Rate ($ per 1,000 gallons)": currentRate,
-  "Usage Levels": usageLevels,
-  "Include CIP Projects": includeCIP,
-  "CIP Projects": cipProjects
-} = inputs;
+  const {
+    "Number of Customers": customers,
+    "Average Monthly Usage (gallons per customer)": usage,
+    "Monthly Base Charge per Customer ($)": baseCharge,
+    "Monthly Add-On Fee ($)": addOnFee,
+    "Annual Operating Costs ($)": om,
+    "Future Asset Replacement Cost ($)": replacementCost,
+    "Median Household Income ($)": mhi,
+    "Interest Rate on Reserves (%)": interest,
+    "Average Asset Lifespan (Years)": lifespan,
+    "Grant/Subsidy Offset ($)": grantOffset,
+    "Tiered Structure": tieredStructure,
+    "Current Tiered Structure": currentTierStructure,
+    "Usage Levels": usageLevels,
+    "Include CIP Projects": includeCIP,
+    "CIP Projects": cipProjects
+  } = inputs;
 
-// ✅ Then handle debt separately
-let debt = 0;
-if (inputs["Enable Loans"]) {
-  debt = calculateTotalDebt(inputs["Loan Details"]);
-} else {
-  debt = inputs["Annual Debt Payments ($)"];
-}
+  let debt = 0;
+  if (inputs["Enable Loans"]) {
+    debt = calculateTotalDebt(inputs["Loan Details"]);
+  } else {
+    debt = inputs["Annual Debt Payments ($)"];
+  }
 
 
   const reserveContribution =
@@ -54,48 +53,36 @@ if (inputs["Enable Loans"]) {
     om + debt + reserveContribution + annualCipCost - (grantOffset || 0)
   );
 
-  const totalGallons = customers * usage * 12;
-  const baseRevenue = baseCharge * customers * 12;
-  const remainingRevenue = revenueNeed - baseRevenue;
+  const baseRevenue = (baseCharge + addOnFee) * customers * 12;
 
-  const flatRate = remainingRevenue > 0 ? remainingRevenue / (totalGallons / 1000) : 0;
-  const flatBill = baseCharge + (usage / 1000) * flatRate;
-  const flatAffordability = ((flatBill * 12) / mhi) * 100;
-
-  const currentBill = baseCharge + (usage / 1000) * currentRate;
+  const currentTiered = calculateTieredBill(baseCharge + addOnFee, usage, currentTierStructure);
+  const currentBill = currentTiered.bill;
   const currentAffordability = ((currentBill * 12) / mhi) * 100;
-
-  let flatMessage = "", flatClass = "";
-  const diff = baseRevenue + (flatRate * totalGallons / 1000) - revenueNeed;
-  const epsilon = 0.5;
-
-  if (diff < -epsilon) {
-    flatMessage = `⚠️ Flat rate model does NOT meet revenue need.`;
-    flatClass = "warning";
-  } else if (diff > epsilon) {
-    flatMessage = `ℹ️ Flat model over-collects by $${diff.toFixed(2)}.`;
-    flatClass = "info";
-  } else {
-    flatMessage = `✅ Flat rate model is revenue neutral.`;
-    flatClass = "success";
-  }
 
   let tiered = null;
   let tieredAffordability = null;
   let tieredMessage = "", tieredClass = "", tieredInfoNote = "";
-  let projectedTieredRevenue = 0;
+// Warn if selected usage levels exceed the highest enabled tier limit
+const overflowUsages = usageLevels.filter(level => {
+  return tieredStructure.length === 0 || level > tieredStructure[tieredStructure.length - 1].limit;
+});
+
+if (overflowUsages.length > 0) {
+  tieredInfoNote += `<p class="result-banner warning">⚠️ Your tiered structure may not cover these usage levels: ${overflowUsages.map(v => v.toLocaleString()).join(", ")} gallons. Bills for these amounts could be under-calculated.</p>`;
+}
+
 
   if (isTieredEnabled()) {
-    tiered = calculateTieredBill(baseCharge, usage, tier1Limit, tier1Rate, tier2Rate);
+    tiered = calculateTieredBill(baseCharge + addOnFee, usage, tieredStructure);
     tieredAffordability = ((tiered.bill * 12) / mhi) * 100;
 
-    if (tiered.volumetricCost === 0) {
-      tieredInfoNote = `<p class="result-banner info">💡 No volumetric revenue under current tiered setup.</p>`;
-    }
+if (tiered.volumetricCost === 0) {
+  tieredInfoNote += `<p class="result-banner info">💡 No volumetric revenue under current tiered setup.</p>`;
+}
 
-    projectedTieredRevenue =
-      baseRevenue + (tiered.volumetricCost * customers * 12);
+    const projectedTieredRevenue = baseRevenue + (tiered.volumetricCost * customers * 12);
     const tDiff = projectedTieredRevenue - revenueNeed;
+    const epsilon = 0.5;
 
     if (tDiff < -epsilon) {
       tieredMessage = `⚠️ Tiered model does NOT meet revenue target.`;
@@ -111,34 +98,32 @@ if (inputs["Enable Loans"]) {
 
   const usageTableRows = renderUsageComparisonTable(
     usageLevels,
-    baseCharge,
-    flatRate,
+    baseCharge + addOnFee,
+    null,
     isTieredEnabled(),
-    tier1Limit,
-    tier1Rate,
-    tier2Rate,
+    tieredStructure,
     mhi,
     calculateTieredBill
   );
 
   renderResults({
-    flatRate,
-    flatBill,
-    flatAffordability,
+    currentTiered,
+    currentTieredBill: currentBill,
+    currentTieredAffordability: currentAffordability,
     currentBill,
     currentAffordability,
-    flatMessage,
-    flatClass,
-    currentRateMessage: currentRate > 0 && flatRate > 0 && flatRate - currentRate > 0.1
-      ? `<p class="result-banner warning">⚠️ Current rate ($${currentRate.toFixed(2)}) is below the required rate ($${flatRate.toFixed(2)}).</p>`
-      : "",
+    currentRateMessage: (() => {
+      const delta = tieredAffordability != null ? currentAffordability - tieredAffordability : 0;
+      if (Math.abs(delta) < 0.01) return "";
+      const direction = delta > 0 ? "increase" : "decrease";
+      return `<p class="result-banner ${delta > 0 ? "warning" : "success"}">💡 Affordability would ${direction} by ${Math.abs(delta).toFixed(2)}% of MHI under the proposed structure.</p>`;
+    })(),
     tieredEnabled: isTieredEnabled(),
     tiered,
     tieredAffordability,
     tieredMessage,
     tieredClass,
-    tier1Rate,
-    tier2Rate,
+    tierStructure: tieredStructure,
     tieredInfoNote,
     usageTableRows,
     inputs,
@@ -146,32 +131,17 @@ if (inputs["Enable Loans"]) {
     annualCipCost,
     revenueNeed,
     exportResultsToCSV,
-generateFlatMath: () =>
-  generateFlatMath(
-    inputs,
-    flatRate,
-    flatBill,
-    flatAffordability,
-    reserveContribution,
-    annualCipCost,
-    revenueNeed,
-    baseRevenue,
-    remainingRevenue,
-    totalGallons,
-    debt,
-    inputs["Loan Details"]
-  ),
-generateTieredMath: () =>
-  generateTieredMath(
-    inputs,
-    tiered?.bill ?? 0,
-    tieredAffordability,
-    tiered,
-    reserveContribution,
-    annualCipCost,
-    revenueNeed,
-    debt,
-    inputs["Loan Details"]
-  ),
+    generateTieredMath: () =>
+      generateTieredMath(
+        inputs,
+        tiered?.bill ?? 0,
+        tieredAffordability,
+        tiered,
+        reserveContribution,
+        annualCipCost,
+        revenueNeed,
+        debt,
+        inputs["Loan Details"]
+      ),
   });
 }

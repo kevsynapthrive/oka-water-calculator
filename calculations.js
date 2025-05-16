@@ -20,19 +20,3 @@ export function calculateAnnualCipCost(projects, interestRatePercent) {
     return sum;
   }, 0);
 }
-
-export function calculateTieredBill(baseCharge, usage, tier1Limit, tier1Rate, tier2Rate) {
-  const tier1Usage = Math.min(usage, tier1Limit);
-  const tier2Usage = Math.max(usage - tier1Limit, 0);
-
-  const volumetricCost = (tier1Usage * tier1Rate + tier2Usage * tier2Rate) / 1000;
-
-  return {
-    bill: baseCharge + volumetricCost,
-    tier1Usage,
-    tier2Usage,
-    volumetricCost,
-    tier1Rate,
-    tier2Rate
-  };
-}

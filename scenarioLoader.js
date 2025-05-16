@@ -39,11 +39,8 @@ export function setupScenarioLoader(debouncedCalculate) {
     });
 
     const flatOnly = ["underFlatOnly", "overFlatOnly", "smallTownFlat"].includes(selected);
-    const tieredCheckbox = document.getElementById("enableTiered");
-    const tieredInputs = document.getElementById("tieredInputs");
-    tieredCheckbox.checked = !flatOnly;
-    tieredInputs.style.display = flatOnly ? "none" : "block";
-    setTieredEnabled(!flatOnly);
+setTieredEnabled(true);
+document.getElementById("tierContainer").style.display = "block";
 
     const cipCheckbox = document.getElementById("enableCIP");
     const cipSection = document.getElementById("cipSection");

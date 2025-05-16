@@ -23,27 +23,6 @@ export const scenarios = {
       { amount: 100000, rate: 2.5, term: 20, description: "Main line replacement loan" }
     ]
   },
-  smallTownFlat: {
-    customers: 500,
-    usage: 4000,
-    baseCharge: 8,
-    tier1Limit: 0,
-    tier1Rate: 0,
-    tier2Rate: 0,
-    om: 150000,
-    debt: 20000,
-    replacementCost: 300000,
-    interest: 1.5,
-    lifespan: 50,
-    mhi: 35000,
-    currentRate: 1.75,
-    grantOffset: 5000,
-    includeCIP: false,
-    usageLevels: ["2000", "5000"],
-    cipProjects: [],
-    enableLoans: false,
-    loanDetails: []
-  },
   growingSuburb: {
     customers: 2000,
     usage: 6000,
@@ -96,51 +75,5 @@ export const scenarios = {
     loanDetails: [
       { amount: 80000, rate: 2.25, term: 25, description: "Old bond refinance" }
     ]
-  },
-  underFlatOnly: {
-    customers: 300,
-    usage: 3000,
-    baseCharge: 1,
-    tier1Limit: 3000,
-    tier1Rate: 4.00,
-    tier2Rate: 4.00,
-    om: 400000,
-    debt: 100000,
-    replacementCost: 700000,
-    interest: 1.5,
-    lifespan: 40,
-    mhi: 35000,
-    currentRate: 0.5,
-    grantOffset: 0,
-    includeCIP: false,
-    usageLevels: ["2000", "5000", "10000"],
-    cipProjects: [],
-    enableLoans: true,
-    loanDetails: [
-      { amount: 150000, rate: 3.25, term: 35, description: "Infrastructure bond" }
-    ]
-  },
-  overFlatOnly: {
-    customers: 1000,
-    usage: 5000,
-    baseCharge: 40,
-    tier1Limit: 3000,
-    tier1Rate: 0.10,
-    tier2Rate: 0.10,
-    om: 200000,
-    debt: 30000,
-    replacementCost: 150000,
-    interest: 2.0,
-    lifespan: 40,
-    mhi: 50000,
-    currentRate: 6.0,
-    grantOffset: 0,
-    includeCIP: false,
-    usageLevels: ["2000", "5000"],
-    cipProjects: [],
-    enableLoans: false,
-    loanDetails: []
   }
 };
-
-export const flatOnlyScenarios = ['underFlatOnly', 'overFlatOnly', 'smallTownFlat'];

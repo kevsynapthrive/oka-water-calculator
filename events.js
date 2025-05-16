@@ -5,6 +5,7 @@ import { calculateComparison } from "./calculator.js";
 import { setupLoanToggle, setupAddLoanRow } from "./loans.js";
 import { setupAddCipRowButton } from "./cip.js";
 import { setupScenarioLoader } from "./scenarioLoader.js";
+import { setupTierInputs, setupCurrentTierInputs, getTierStructure,calculateTieredBill  } from "./tiers.js";
 
 function debounce(func, delay = 300) {
   let timeout;
@@ -17,7 +18,11 @@ function debounce(func, delay = 300) {
 const debouncedCalculate = debounce(calculateComparison, 300);
 
 document.addEventListener("DOMContentLoaded", () => {
-  setupTieredToggle();
+  document.getElementById("tierContainer").style.display = "block";
+  document.getElementById("currentTierContainer").style.display = "block";
+setTieredEnabled(true);
+  setupTierInputs(debouncedCalculate);
+  setupCurrentTierInputs(debouncedCalculate);
   setupCipToggle();
   setupAddCipRowButton(debouncedCalculate);   // ✅ fixed
   setupSliders();
@@ -30,21 +35,6 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
-function setupTieredToggle() {
-  const tieredToggle = document.getElementById("enableTiered");
-  const tieredInputs = document.getElementById("tieredInputs");
-
-  if (tieredToggle && tieredInputs) {
-    tieredInputs.style.display = tieredToggle.checked ? "block" : "none";
-    setTieredEnabled(tieredToggle.checked);
-
-    tieredToggle.addEventListener("change", (e) => {
-      tieredInputs.style.display = e.target.checked ? "block" : "none";
-      setTieredEnabled(e.target.checked);
-      debouncedCalculate();
-    });
-  }
-}
 
 function setupCipToggle() {
   const cipToggle = document.getElementById("enableCIP");
@@ -96,6 +86,17 @@ function setupInputListeners() {
   if (compareButton) {
     compareButton.addEventListener("click", () => calculateComparison());
   }
+
+  // Manually add listeners to current tier enable checkboxes
+for (let i = 3; i <= 4; i++) {
+  const box = document.getElementById(`enableCurrentTier${i}`);
+  if (box) {
+    box.addEventListener("change", () => {
+      debouncedCalculate();
+    });
+  }
+}
+
 }
 
 function triggerInitialCipYear() {
@@ -106,3 +107,4 @@ function triggerInitialCipYear() {
     initialCipYear.min = year;
   }
 }
+

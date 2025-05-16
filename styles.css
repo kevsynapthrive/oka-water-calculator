@@ -353,3 +353,66 @@ button.small-btn {
 button.small-btn:hover {
   background-color: #ffe5e5;
 }
+.current-tier-label,
+.future-tier-label {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: var(--oka-dark);
+  border-bottom: 2px solid var(--oka-accent);
+  padding-bottom: 0.25rem;
+}
+
+.tiered-card {
+  background-color: #fff;
+  padding: 1rem;
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.show-math-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  background-color: var(--oka-blue);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 0.75rem;
+  transition: background 0.2s ease-in-out;
+}
+
+.show-math-btn:hover {
+  background-color: var(--oka-teal);
+}
+.input-group {
+  margin-bottom: 0.5rem; /* Was 1rem */
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.tier-row {
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #f9f9f9;
+}
+
+.tier-row .input-group {
+  margin-bottom: 0.25rem;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tier-row input[type="range"] {
+  flex-grow: 1;
+  margin: 0 0.5rem;
+  min-width: 100px;
+}
+
+.tier-row label {
+  min-width: 150px;
+  font-size: 0.9rem;
+}

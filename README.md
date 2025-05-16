@@ -1,101 +1,80 @@
-# 💧 Oka' Institute Water Pricing Calculator
 
-An interactive web-based tool developed in collaboration with [The Oka' Institute](https://www.okainstitute.org/) to support sustainable water rate setting for rural and small communities. This calculator helps decision-makers align water rates with full-cost recovery and affordability benchmarks, using visual outputs and built-in financial logic.
+# Oka' Institute Water Pricing Calculator
 
----
+An interactive web-based tool to help rural Oklahoma communities evaluate and plan water rates using full-cost recovery and affordability metrics.
 
-## 🚀 Features
+## 🌊 Project Purpose
 
-### ✅ Fully Implemented
-- **Flat vs. Tiered Rate Modeling**
-  Compare flat and two-tier rate structures with revenue validation.
+Developed in collaboration with [The Oka' Institute](https://www.okainstitute.org/), this calculator helps small systems set sustainable, data-informed water rates. It estimates revenue sufficiency, visualizes affordability, and supports capital and debt planning.
 
-- **Loan Amortization (Multi-Loan)**
-  Input multiple loans with individual amounts, interest rates, and terms. Annual debt service is computed using amortization.
+## ✅ Features
 
-- **Capital Improvement Plan (CIP) Support**
-  Add future projects with reserve or debt funding and calculate annualized cost.
+- **Tiered Rate Modeling**: Configure up to 4 usage tiers for both current and proposed structures.
+- **Affordability Tracking**: Measures water bills as % of Median Household Income (MHI).
+- **Usage-Level Comparisons**: Shows monthly bills at multiple usage levels with affordability ratings.
+- **Revenue Need Calculator**: Combines O&M, debt, replacement reserves, and capital planning.
+- **Capital Improvement Planning (CIP)**: Add projects and choose funding method (reserve vs debt).
+- **Loan Amortization**: Model multiple loans with unique terms and rates.
+- **Scenario Loader**: Load sample community profiles for quick demos or teaching.
+- **Visual Outputs**: Revenue pie charts, affordability bars, math breakdowns.
+- **CSV Export**: Outputs all inputs, tier details, revenue estimates, and usage-level bills.
 
-- **Affordability Metrics and Visualization**
-  Calculates % of Median Household Income (MHI) and displays color-coded affordability bar.
+## 📦 Tech Stack
 
-- **Multi-Usage Bill Comparison**
-  Compare bills and affordability at 2,000 / 5,000 / 10,000 gallon levels.
+- Vanilla JavaScript (modular ES6)
+- HTML/CSS (flexbox layout, accessibility features)
+- Chart.js (lightweight visualization)
+- FileSaver.js (CSV export)
 
-- **Current Rate Comparison**
-  See whether your current rate meets full-cost recovery needs.
+## 🚀 Getting Started
 
-- **Sliders for Assumption Tuning**
-  Adjust interest rate and asset lifespan with responsive recalculation.
+1. Clone or download the repo.
+2. Open `index.html` in your browser.
+3. Modify `scenarios.js` to add new preloaded profiles if needed.
 
-- **Real-Time Interactivity**
-  All calculations respond immediately to input changes and scenario loading.
-
-- **Visual Revenue Breakdown**
-  Pie charts show how the revenue need is split (O&M, Debt, CIP, Reserve).
-
-- **Step-by-Step Math Breakdown**
-  Transparent explanation of how the final rates and bills are calculated.
-
-- **Export to CSV**
-  Exports all inputs, outputs, and calculations with loan and CIP detail.
-
-- **Sample Scenarios**
-  Preloaded sample communities demonstrate a range of system profiles.
-
-- **Styled Inline Buttons (🗑️ Remove)**
-  Loan and CIP sections now use small consistent trash buttons styled for readability.
-
----
-
-## 📁 Project Structure
+## 🧩 Folder Structure (Key Files)
 
 ```
-index.html           → UI layout and structure
-styles.css           → Theme and responsive design
-calculator.js        → Main logic and calculations
-charts.js            → Revenue breakdown charts
-render.js            → DOM updates and results formatting
-inputs.js            → Input collection
-events.js            → UI event listeners and interactivity
-loans.js             → Loan row handling and amortization
-cip.js               → Capital project row handling and annualization
-scenarios.js         → Sample system profiles
-scenarioLoader.js    → Loads scenarios into inputs and rows
-exporter.js          → CSV export logic
-mathDetails.js       → Step-by-step calculation explanations
+.
+├── index.html              # UI layout and content
+├── styles.css              # Styling and layout
+├── calculator.js           # Central calculation + rendering trigger
+├── inputs.js               # Input collection and validation
+├── tiers.js                # Tiered rate sliders and logic
+├── loans.js                # Loan entry and amortization
+├── cip.js                  # CIP entry and reserve/debt modeling
+├── calculations.js         # Core math for reserve and CIP
+├── render.js               # UI rendering and visualization
+├── charts.js               # Pie charts via Chart.js
+├── exporter.js             # CSV export logic
+├── state.js                # Shared state for toggleable settings
+├── mathDetails.js          # Detailed math breakdown output
+├── showMath.js             # Show/hide logic for usage-level math
+├── scenarios.js            # Predefined test cases
+└── scenarioLoader.js       # Dropdown handler for loading scenarios
 ```
 
----
+## 🔍 Future Enhancements
 
-## 🧪 How to Use
+- Sliders for interest/lifespan + visual updates
+- Optional customer distribution per tier
+- Enhanced educational tooltips
+- Save/load custom user inputs
+- Per-loan math explanations
+- Multilingual support
 
-1. Open `index.html` in your browser
-2. Input your system data or load a sample scenario
-3. Adjust sliders, add loans or CIP projects as needed
-4. Instantly review affordability, rate outputs, and pie charts
-5. Export results to CSV for records or presentations
+## 🧠 Based On
 
-All functionality is client-side; no server setup required.
+Guidance from:
+- AWWA’s M1 Manual
+- NRWA rate-setting principles
+- EPA affordability metrics
 
----
+## 🤝 License
 
-## 🛠️ Roadmap (In Progress or Planned)
-
-- Breakout of bill into line-item components (O&M, CIP, Debt)
-- Revenue share validation across tiers
-- Inflation/growth modeling for O&M
-- Additional affordability metrics (low-income, poverty level)
-- Modular loan row creation to reduce code duplication
+This tool is intended for public benefit and educational use. Contact the Oka' Institute for reuse or customization.
 
 ---
 
-## 🏛️ About The Oka' Institute
+For questions, contributions, or feedback, reach out to the development team or the Oka' Institute.
 
-This project supports long-term sustainability for Oklahoma’s water systems through financial planning tools and education. Learn more at [okainstitute.org](https://www.okainstitute.org/).
-
----
-
-## 🛡️ License
-
-Licensed under the MIT License.
