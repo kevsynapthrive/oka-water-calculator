@@ -1,0 +1,372 @@
+/* Oka' Institute Water Pricing Calculator Tool Styles */
+
+/* Color Palette */
+:root {
+    /* Primary Oka' colors - softer blue palette */
+    --primary: #2F86A6;         /* Softer blue (from bright primary blue) */
+    --primary-light: #75B7D9;   /* Lighter accent blue */
+    --primary-dark: #1A5D7A;    /* Darker blue for contrast */
+    
+    /* Background colors - warmer & less harsh */
+    --bg-light: #F5F9FC;        /* Very light blue tint instead of pure white */
+    --bg-card: #FFFFFF;         /* Card backgrounds remain white */
+    --bg-secondary: #EBF5FB;    /* Light blue for secondary elements */
+    
+    /* Text colors - reduced contrast for less eye strain */
+    --text-dark: #2C3E50;       /* Softer black for main text */
+    --text-medium: #566573;     /* Medium gray for secondary text */
+    --text-light: #F5F9FC;      /* Off-white for text on dark backgrounds */
+    
+    /* Accent colors */
+    --accent: #34A0A4;          /* Teal accent for highlights */
+    --success: #2ECC71;         /* Green for positive indicators */
+    --warning: #E67E22;         /* Orange for warnings */
+    --danger: #E74C3C;          /* Red for alerts/errors */
+}
+
+/* General Styles */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #333;
+    scroll-behavior: smooth;
+    background-color: var(--bg-light);
+}
+
+.chart-container {
+    position: relative;
+    height: 400px;
+    margin-bottom: 2rem;
+}
+
+/* Card and Input Styles */
+.card {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    background-color: var(--bg-card);
+}
+
+.card-header {
+    cursor: pointer;
+    transition: background-color 0.3s;
+    background-color: var(--bg-secondary);
+    color: var(--text-dark);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.card-header:hover {
+    background-color: #f8f9fa;
+}
+
+.toggle-icon {
+    transition: transform 0.3s;
+}
+
+.card-header[aria-expanded="false"] .toggle-icon {
+    transform: rotate(180deg);
+}
+
+.form-range {
+    cursor: pointer;
+}
+
+/* Results section styling */
+#results-section {
+    position: relative;
+    border-top: 2px solid #dee2e6;
+    padding-top: 2rem;
+}
+
+#results-section h2 {
+    position: relative;
+    background-color: #fff;
+    display: inline-block;
+    padding: 0 1rem;
+    margin-top: -1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.card-header:hover {
+    background-color: #f8f9fa;
+}
+
+.toggle-icon {
+    transition: transform 0.3s;
+}
+
+.card-header[aria-expanded="false"] .toggle-icon {
+    transform: rotate(180deg);
+}
+
+.form-range {
+    cursor: pointer;
+}
+
+.form-range::-webkit-slider-thumb {
+    background: #0d6efd;
+}
+
+.form-range::-moz-range-thumb {
+    background: #0d6efd;
+}
+
+/* Affordability Indicators */
+.progress {
+    height: 20px;
+    border-radius: 10px;
+    background-color: #e9ecef;
+}
+
+.progress-bar {
+    background-color: #0d6efd;
+    transition: width 0.5s;
+}
+
+.progress-bar.bg-danger {
+    background-color: #dc3545 !important;
+}
+
+.progress-bar.bg-warning {
+    background-color: #ffc107 !important;
+}
+
+.progress-bar.bg-success {
+    background-color: #198754 !important;
+}
+
+/* Floating Button */
+#backToTop {
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+    opacity: 0.7;
+    z-index: 1000;
+}
+
+#backToTop:hover {
+    opacity: 1;
+    transform: translateY(-5px);
+}
+
+/* Responsive Tweaks */
+@media (max-width: 768px) {
+    .chart-container {
+        height: 300px;
+    }
+    
+    .card-title {
+        font-size: 1.25rem;
+    }
+    
+    .utility-buttons {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .utility-buttons .btn {
+        width: 100%;
+    }
+}
+
+/* Table Styles */
+.table th {
+    background-color: #f8f9fa;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+/* Tier Structure Switch */
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+/* Loan and Project Cards */
+.loan-entry, .project-entry, .grant-entry {
+    transition: all 0.3s;
+}
+
+.loan-entry:hover, .project-entry:hover, .grant-entry:hover {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Modal Styles */
+.modal-content {
+    border-radius: 8px;
+}
+
+.modal-header {
+    background-color: #f8f9fa;
+}
+
+/* Chart Tooltips */
+.chart-tooltip {
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+/* Accessibility Improvements */
+.form-control:focus, .form-select:focus, .btn:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Apply colors to base elements */
+body {
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+}
+
+.bg-primary {
+    background-color: var(--primary) !important;
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+    border-color: var(--primary-dark);
+}
+
+.btn-outline-light {
+    color: var(--text-light);
+    border-color: var(--text-light);
+}
+
+.btn-outline-light:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: var(--text-light);
+}
+
+.text-primary {
+    color: var(--primary) !important;
+}
+
+/* Card styling */
+.card {
+    background-color: var(--bg-card);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+}
+
+.card-header {
+    background-color: var(--bg-secondary);
+    color: var(--text-dark);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Input styles */
+.form-control, .form-select {
+    background-color: var(--bg-card);
+    border: 1px solid #D5D8DC;
+    color: var(--text-dark);
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-light);
+    box-shadow: 0 0 0 0.2rem rgba(47, 134, 166, 0.25);
+}
+
+/* Sliders */
+.form-range::-webkit-slider-thumb {
+    background: var(--primary);
+}
+
+.form-range::-moz-range-thumb {
+    background: var(--primary);
+}
+
+/* Table styling */
+table {
+    background-color: var(--bg-card);
+}
+
+thead {
+    background-color: var(--bg-secondary);
+}
+
+/* Results section styling */
+#results-section .card {
+    border-top: 3px solid var(--primary);
+}
+
+/* Charts - if you're using a charting library, you may need to configure its colors separately */
+/* Header Styles */
+.app-header {
+    min-height: 70px;
+}
+
+/* Make the header more compact on small screens */
+@media (max-width: 767px) {
+    .app-header h1 {
+        font-size: 1.25rem !important;
+    }
+    
+    .app-header img {
+        height: 45px !important;
+    }
+    
+    .app-header .container {
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+    
+    .app-header .btn-group .btn {
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .app-header .btn-sm {
+        padding: 0.25rem 0.5rem;
+    }
+}
+
+/* Very small screens: just show icons */
+@media (max-width: 575px) {
+    .app-header .btn-sm:not(.btn-light) span,
+    .app-header .btn-group .btn span {
+        display: none !important;
+    }
+}

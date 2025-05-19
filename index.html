@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oka' Institute Water Pricing Calculator Tool</title>    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/collapsible-tables.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💧</text></svg>" type="image/svg+xml">
+</head>
+<body>
+<header class="app-header bg-primary text-white py-2 sticky-top shadow-sm">
+    <div class="container">
+        <div class="d-flex flex-wrap align-items-center">
+            <!-- Logo and Title -->
+            <div class="d-flex align-items-center flex-grow-1">
+                <img src="OkaLogo.png" alt="Oka' Institute Logo" class="img-fluid me-3" style="height: 55px;">
+                <div>
+                    <h1 class="fs-4 mb-0 d-flex align-items-center">
+                        Oka' Institute Water Pricing Calculator
+                        <span class="badge bg-light text-primary ms-2 fs-6">v1.0</span>
+                    </h1>
+                    <p class="small mb-0 text-white-50">Plan sustainable, long-term water rates for your rural community</p>
+                </div>
+            </div>
+            
+            <!-- Buttons Container -->
+            <div class="d-flex flex-nowrap align-items-center gap-2 ms-auto">
+                <!-- Navigation buttons -->
+                <div class="d-none d-md-flex gap-2">
+                    <a class="btn btn-sm btn-outline-light" href="#inputs-section">
+                        <i class="bi bi-input-cursor"></i> Inputs
+                    </a>
+                    <a class="btn btn-sm btn-outline-light" href="#results-section">
+                        <i class="bi bi-graph-up"></i> Results
+                    </a>
+                </div>
+                
+                <!-- Tool function buttons -->
+                <button id="collapseAll" class="btn btn-outline-light btn-sm" data-expanded="true" title="Collapse or expand all input sections">
+                    <i class="bi bi-arrows-collapse"></i> <span class="d-none d-lg-inline">Collapse</span>
+                </button>
+                
+                <div class="btn-group btn-group-sm">
+                    <button id="exportData" class="btn btn-outline-light" title="Export all data to CSV">
+                        <i class="bi bi-download"></i> <span class="d-none d-lg-inline">Export</span>
+                    </button>
+                    <button disabled id="importData" class="btn btn-outline-light" title="Import data from CSV">
+                        <i class="bi bi-upload"></i> <span class="d-none d-lg-inline">Import</span>
+                    </button>
+                </div>
+                
+                <button id="showMath" class="btn btn-outline-light btn-sm" title="Show or hide calculation details">
+                    <i class="bi bi-calculator"></i> <span class="d-none d-lg-inline">Math</span>
+                </button>
+                
+                <button id="helpButton" class="btn btn-sm btn-light" title="Help and information" data-bs-toggle="modal" data-bs-target="#helpModal">
+                    <i class="bi bi-question-circle text-primary"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Mobile-only navigation -->
+        <div class="d-flex d-md-none mt-2">
+            <div class="btn-group btn-group-sm w-100">
+                <a class="btn btn-outline-light w-50" href="#inputs-section">
+                    <i class="bi bi-input-cursor"></i> Inputs
+                </a>
+                <a class="btn btn-outline-light w-50" href="#results-section">
+                    <i class="bi bi-graph-up"></i> Results
+                </a>
+            </div>
+        </div>
+    </div>
+</header>
+    <main class="container my-4">
+        <!-- INPUTS SECTION -->
+        <div id="inputs-section">
+            <h2 class="mb-3">Input Parameters</h2>
+                <!-- Scenario Selection -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#scenarioCollapse" aria-expanded="true">
+                        <h3 class="card-title mb-0">Scenario Selection</h3>
+                        <i class="bi bi-chevron-down toggle-icon"></i>
+                    </div>
+                    <div class="collapse show" id="scenarioCollapse">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="scenarioSelect" class="form-label">Load Sample Scenario</label>
+                                        <select class="form-select" id="scenarioSelect">
+                                            <option value="">-- Select a scenario --</option>
+                                            <option value="madill">Madill, OK (< 4,000 population)</option>
+                                            <option value="tuttle">Tuttle, OK (~ 8,000 population)</option>
+                                            <option value="newcastle">Newcastle, OK (~ 10,000 population)</option>
+                                            <option value="ardmore">Ardmore, OK (~ 25,000 population)</option>
+                                        </select>                                    </div>
+                                </div>
+                               
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Community Information -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#communityCollapse" aria-expanded="true">
+                        <h3 class="card-title mb-0">Community Information</h3>
+                        <i class="bi bi-chevron-down toggle-icon"></i>
+                    </div>
+                    <div class="collapse show" id="communityCollapse">
+                        <div class="card-body">
+                            <div class="row">
+                                 <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="communityName" class="form-label">Community Name</label>
+                                        <input type="text" class="form-control" id="communityName" placeholder="Enter community name">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="medianIncome" class="form-label">Median Household Income ($)</label>
+                                        <input type="number" class="form-control" id="medianIncome" placeholder="0">
+                                    </div>                                </div>
+
+                                                                    <div class="col-md-6">
+
+                                    <div class="mb-3">
+                                        <label for="povertyIncome" class="form-label">Poverty Level Income ($)</label>
+                                        <input type="number" class="form-control" id="povertyIncome" placeholder="0">
+                                    </div>
+                          
+                                    <div class="mb-3">
+                                        <label for="belowPovertySlider" class="form-label">% Households Below Poverty: <span id="belowPovertyValue">0</span>%</label>
+                                        <input type="range" class="form-range" id="belowPovertySlider" min="0" max="100" step="1" value="0">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Information -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#systemCollapse" aria-expanded="true">
+                        <h3 class="card-title mb-0">System Information</h3>
+                        <i class="bi bi-chevron-down toggle-icon"></i>
+                    </div>
+                    <div class="collapse show" id="systemCollapse">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="customerCount" class="form-label">Current Number of Customers (Accounts)</label>
+                                        <input type="number" class="form-control" id="customerCount" placeholder="0">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="avgMonthlyUsage" class="form-label">Current Average Monthly Usage per Customer (gallons)</label>
+                                        <input type="number" class="form-control" id="avgMonthlyUsage" placeholder="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="waterLossSlider" class="form-label">Water Loss Percentage: <span id="waterLossValue">0</span>%</label>
+                                        <input type="range" class="form-range" id="waterLossSlider" min="0" max="50" step="1" value="0">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Compare Bills at Usage Levels (gallons/month)</label>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="2000" id="compareUsage2000" checked>
+                                            <label class="form-check-label" for="compareUsage2000">2,000 gallons</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="5000" id="compareUsage5000" checked>
+                                            <label class="form-check-label" for="compareUsage5000">5,000 gallons</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="10000" id="compareUsage10000" checked>
+                                            <label class="form-check-label" for="compareUsage10000">10,000 gallons</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Financial Information -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#financialCollapse" aria-expanded="true">
+                        <h3 class="card-title mb-0">Financial Information</h3>
+                        <i class="bi bi-chevron-down toggle-icon"></i>
+                    </div>
+                    <div class="collapse show" id="financialCollapse">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="operatingCost" class="form-label">Current Yearly Cost to Operate Water System ($)</label>
+                                        <input type="number" class="form-control" id="operatingCost" placeholder="0">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="debtPayments" class="form-label">Current Annual Debt Payments ($)</label>
+                                        <input type="number" class="form-control" id="debtPayments" placeholder="0">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="infrastructureCost" class="form-label">Current Estimated Cost to Replace Aging Infrastructure ($)</label>
+                                        <input type="number" class="form-control" id="infrastructureCost" placeholder="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="interestRateSlider" class="form-label">Current Interest Rate on Reserves: <span id="interestRateValue">0</span>%</label>
+                                        <input type="range" class="form-range" id="interestRateSlider" min="0" max="10" step="0.1" value="0">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="assetLifespanSlider" class="form-label">Asset Lifespan (Years): <span id="assetLifespanValue">0</span></label>
+                                        <input type="range" class="form-range" id="assetLifespanSlider" min="0" max="100" step="1" value="0">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="projectionPeriod" class="form-label">Projection Period (years)</label>
+                                        <input type="number" class="form-control" id="projectionPeriod" placeholder="0">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="inflationRateSlider" class="form-label">Annual O&M Inflation Rate: <span id="inflationRateValue">0</span>%</label>
+                                        <input type="range" class="form-range" id="inflationRateSlider" min="0" max="10" step="0.1" value="0">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="customerGrowthSlider" class="form-label">Annual Customer Growth Rate: <span id="customerGrowthValue">0</span>%</label>
+                                        <input type="range" class="form-range" id="customerGrowthSlider" min="0" max="10" step="0.1" value="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="interestAdjustmentSlider" class="form-label">Annual Interest Rate Adjustment: <span id="interestAdjustmentValue">0</span>%</label>
+                                        <input type="range" class="form-range" id="interestAdjustmentSlider" min="-2" max="2" step="0.1" value="0">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="targetReserve" class="form-label">Target Reserve Amount ($)</label>
+                                        <input type="number" class="form-control" id="targetReserve" placeholder="0">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="targetYearSlider" class="form-label">Target Year to Achieve Reserve: <span id="targetYearValue">0</span></label>
+                                        <input type="range" class="form-range" id="targetYearSlider" min="1" max="50" step="1" value="0">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loans and Debt Section -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#loansCollapse" aria-expanded="true">
+                        <h3 class="card-title mb-0">Loans and Debt</h3>
+                        <i class="bi bi-chevron-down toggle-icon"></i>
+                    </div>
+                    <div class="collapse show" id="loansCollapse">
+                        <div class="card-body">
+                            <button id="addLoan" class="btn btn-primary mb-3">Add Loan</button>
+                            <div id="loansContainer">
+                                <!-- Loan entries will be added here dynamically -->
+                                <div class="loan-entry card mb-3">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Loan Name</label>
+                                                    <input type="text" class="form-control loan-name" placeholder="Loan name">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Amount ($)</label>
+                                                    <input type="number" class="form-control loan-amount" placeholder="0">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Interest Rate (%)</label>
+                                                    <input type="number" class="form-control loan-interest" placeholder="0">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Term (years)</label>
+                                                    <input type="number" class="form-control loan-term" placeholder="0">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <button class="btn btn-danger mt-4 remove-loan">Remove</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Capital Projects Section -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#projectsCollapse" aria-expanded="true">
+                        <h3 class="card-title mb-0">Capital Projects</h3>
+                        <i class="bi bi-chevron-down toggle-icon"></i>
+                    </div>
+                    <div class="collapse show" id="projectsCollapse">
+                        <div class="card-body">
+                            <button id="addProject" class="btn btn-primary mb-3">Add Project</button>
+                            <div id="projectsContainer">
+                                <!-- Project entries will be added here dynamically -->
+                                <div class="project-entry card mb-3">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Project Name</label>
+                                                    <input type="text" class="form-control project-name" placeholder="Project name">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Cost ($)</label>
+                                                    <input type="number" class="form-control project-cost" placeholder="0">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Project Year</label>
+                                                    <input type="number" class="form-control project-year" placeholder="0">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Funding Source</label>
+                                                    <select class="form-select project-funding">
+                                                        <option value="reserves">Reserves</option>
+                                                        <option value="loan">Loan/Debt</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <button class="btn btn-danger mt-4 remove-project">Remove</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grants and Subsidies Section -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#grantsCollapse" aria-expanded="true">
+                        <h3 class="card-title mb-0">Grants and Subsidies</h3>
+                        <i class="bi bi-chevron-down toggle-icon"></i>
+                    </div>
+                    <div class="collapse show" id="grantsCollapse">
+                        <div class="card-body">
+                            <button id="addGrant" class="btn btn-primary mb-3">Add Grant</button>
+                            <div id="grantsContainer">
+                                <!-- Grant entries will be added here dynamically -->
+                                <div class="grant-entry card mb-3">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Grant/Subsidy Name</label>
+                                                    <input type="text" class="form-control grant-name" placeholder="Grant name">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Amount ($)</label>
+                                                    <input type="number" class="form-control grant-amount" placeholder="0">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Year</label>
+                                                    <input type="number" class="form-control grant-year" placeholder="0">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <button class="btn btn-danger mt-4 remove-grant">Remove</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Current Rate Structure -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#currentRateCollapse" aria-expanded="true">
+                        <h3 class="card-title mb-0">Current Rate Structure</h3>
+                        <i class="bi bi-chevron-down toggle-icon"></i>
+                    </div>
+                    <div class="collapse show" id="currentRateCollapse">
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="currentBaseRate" class="form-label">Base Rate ($)</label>
+                                        <input type="number" class="form-control" id="currentBaseRate" placeholder="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="currentAddonFee" class="form-label">Add-on Fee ($)</label>
+                                        <input type="number" class="form-control" id="currentAddonFee" placeholder="0">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <h4>Tier Structure</h4>
+                            
+                            <!-- Tier 1 -->
+                            <div class="row mb-3 tier-row">
+                                <div class="col-md-1">
+                                    <div class="form-check form-switch mt-4">
+                                        <input class="form-check-input tier-enabled" type="checkbox" id="currentTier1Enabled" checked>
+                                        <label class="form-check-label" for="currentTier1Enabled">Tier 1</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="mb-3">
+                                        <label for="currentTier1Limit" class="form-label">Tier Limit (gallons)</label>
+                                        <input type="number" class="form-control tier-limit" id="currentTier1Limit" placeholder="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="currentTier1Rate" class="form-label">Rate ($ per 1,000 gallons)</label>
+                                        <input type="number" class="form-control tier-rate" id="currentTier1Rate" placeholder="0">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Tier 2 -->
+                            <div class="row mb-3 tier-row">
+                                <div class="col-md-1">
+                                    <div class="form-check form-switch mt-4">
+                                        <input class="form-check-input tier-enabled" type="checkbox" id="currentTier2Enabled">
+                                        <label class="form-check-label" for="currentTier2Enabled">Tier 2</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="mb-3">
+                                        <label for="currentTier2Limit" class="form-label">Tier Limit (gallons)</label>
+                                        <input type="number" class="form-control tier-limit" id="currentTier2Limit" placeholder="0" disabled>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="currentTier2Rate" class="form-label">Rate ($ per 1,000 gallons)</label>
+                                        <input type="number" class="form-control tier-rate" id="currentTier2Rate" placeholder="0" disabled>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Tier 3 -->
+                            <div class="row mb-3 tier-row">
+                                <div class="col-md-1">
+                                    <div class="form-check form-switch mt-4">
+                                        <input class="form-check-input tier-enabled" type="checkbox" id="currentTier3Enabled">
+                                        <label class="form-check-label" for="currentTier3Enabled">Tier 3</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="mb-3">
+                                        <label for="currentTier3Limit" class="form-label">Tier Limit (gallons)</label>
+                                        <input type="number" class="form-control tier-limit" id="currentTier3Limit" placeholder="0" disabled>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="currentTier3Rate" class="form-label">Rate ($ per 1,000 gallons)</label>
+                                        <input type="number" class="form-control tier-rate" id="currentTier3Rate" placeholder="0" disabled>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Tier 4 -->
+                            <div class="row mb-3 tier-row">
+                                <div class="col-md-1">
+                                    <div class="form-check form-switch mt-4">
+                                        <input class="form-check-input tier-enabled" type="checkbox" id="currentTier4Enabled">
+                                        <label class="form-check-label" for="currentTier4Enabled">Tier 4</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="mb-3">
+                                        <label for="currentTier4Limit" class="form-label">Tier Limit (gallons)</label>
+                                        <input type="number" class="form-control tier-limit" id="currentTier4Limit" placeholder="0" disabled>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="currentTier4Rate" class="form-label">Rate ($ per 1,000 gallons)</label>
+                                        <input type="number" class="form-control tier-rate" id="currentTier4Rate" placeholder="0" disabled>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Future Rate Structure -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#futureRateCollapse" aria-expanded="true">
+                        <h3 class="card-title mb-0">Future Rate Structure</h3>
+                        <i class="bi bi-chevron-down toggle-icon"></i>
+                    </div>
+                    <div class="collapse show" id="futureRateCollapse">
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="futureBaseRate" class="form-label">Base Rate ($)</label>
+                                        <input type="number" class="form-control" id="futureBaseRate" placeholder="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="futureAddonFee" class="form-label">Add-on Fee ($)</label>
+                                        <input type="number" class="form-control" id="futureAddonFee" placeholder="0">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <h4>Tier Structure</h4>
+                            
+                            <!-- Tier 1 -->
+                            <div class="row mb-3 tier-row">
+                                <div class="col-md-1">
+                                    <div class="form-check form-switch mt-4">
+                                        <input class="form-check-input tier-enabled" type="checkbox" id="futureTier1Enabled" checked>
+                                        <label class="form-check-label" for="futureTier1Enabled">Tier 1</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="mb-3">
+                                        <label for="futureTier1Limit" class="form-label">Tier Limit (gallons)</label>
+                                        <input type="number" class="form-control tier-limit" id="futureTier1Limit" placeholder="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="futureTier1Rate" class="form-label">Rate ($ per 1,000 gallons)</label>
+                                        <input type="number" class="form-control tier-rate" id="futureTier1Rate" placeholder="0">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Tier 2 -->
+                            <div class="row mb-3 tier-row">
+                                <div class="col-md-1">
+                                    <div class="form-check form-switch mt-4">
+                                        <input class="form-check-input tier-enabled" type="checkbox" id="futureTier2Enabled">
+                                        <label class="form-check-label" for="futureTier2Enabled">Tier 2</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="mb-3">
+                                        <label for="futureTier2Limit" class="form-label">Tier Limit (gallons)</label>
+                                        <input type="number" class="form-control tier-limit" id="futureTier2Limit" placeholder="0" disabled>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="futureTier2Rate" class="form-label">Rate ($ per 1,000 gallons)</label>
+                                        <input type="number" class="form-control tier-rate" id="futureTier2Rate" placeholder="0" disabled>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Tier 3 -->
+                            <div class="row mb-3 tier-row">
+                                <div class="col-md-1">
+                                    <div class="form-check form-switch mt-4">
+                                        <input class="form-check-input tier-enabled" type="checkbox" id="futureTier3Enabled">
+                                        <label class="form-check-label" for="futureTier3Enabled">Tier 3</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="mb-3">
+                                        <label for="futureTier3Limit" class="form-label">Tier Limit (gallons)</label>
+                                        <input type="number" class="form-control tier-limit" id="futureTier3Limit" placeholder="0" disabled>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="futureTier3Rate" class="form-label">Rate ($ per 1,000 gallons)</label>
+                                        <input type="number" class="form-control tier-rate" id="futureTier3Rate" placeholder="0" disabled>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Tier 4 -->
+                            <div class="row mb-3 tier-row">
+                                <div class="col-md-1">
+                                    <div class="form-check form-switch mt-4">
+                                        <input class="form-check-input tier-enabled" type="checkbox" id="futureTier4Enabled">
+                                        <label class="form-check-label" for="futureTier4Enabled">Tier 4</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="mb-3">
+                                        <label for="futureTier4Limit" class="form-label">Tier Limit (gallons)</label>
+                                        <input type="number" class="form-control tier-limit" id="futureTier4Limit" placeholder="0" disabled>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="futureTier4Rate" class="form-label">Rate ($ per 1,000 gallons)</label>
+                                        <input type="number" class="form-control tier-rate" id="futureTier4Rate" placeholder="0" disabled>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RESULTS SECTION -->
+                <div id="results-section" class="mt-5">
+                    <h2 class="mb-4">Results</h2>
+                    
+                    <!-- Current Tier Structure Analysis -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h3 class="card-title mb-0">Current Tier Structure Analysis</h3>
+                        </div>
+                        <div class="card-body">
+                                <h4>Monthly Estimated Bill Breakdown</h4>
+                                <div class="table-responsive mb-4">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Tier</th>
+                                                <th>Gallons</th>
+                                                <th>Rate ($/1,000 gal)</th>
+                                                <th>Cost ($)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="currentBillBreakdown">
+                                            <!-- Filled dynamically by JavaScript -->
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th colspan="3" class="text-end">Base Rate</th>
+                                                <td id="currentBaseRateCost">$0.00</td>
+                                            </tr>
+                                            <tr>
+                                                <th colspan="3" class="text-end">Add-on Fee</th>
+                                                <td id="currentAddonFeeCost">$0.00</td>
+                                            </tr>
+                                            <tr>
+                                                <th colspan="3" class="text-end">Total Monthly Bill</th>
+                                                <td id="currentTotalBill">$0.00</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+
+                                <h4>Affordability Analysis</h4>
+                                <div class="row mb-4">
+                                    <div class="col-md-6">
+                                        <p>Monthly bill as percentage of Median Household Income: <span id="currentAffordabilityMHI">0.00%</span></p>
+                                        <div class="progress mb-3">
+                                            <div id="currentAffordabilityBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span>0%</span>
+                                            <span class="text-danger">EPA Threshold: 2.5%</span>
+                                            <span>10%</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <canvas id="currentRevenuePieChart"></canvas>
+                                    </div>
+                                </div>
+
+                                <h4>Revenue Status</h4>
+                                <div class="row mb-4">
+                                    <div class="col-md-12">
+                                        <p>Annual Revenue: <span id="currentAnnualRevenue">$0</span></p>
+                                        <p>Annual Revenue Need: <span id="currentAnnualRevenueNeed">$0</span></p>
+                                        <div class="card mb-3">
+                                            <div class="card-header bg-light">
+                                                <h5 class="mb-0">Financial Planning Factors</h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <table class="table table-sm">
+                                                    <tr>
+                                                        <th>Operating Costs:</th>
+                                                        <td id="currentOperatingCost">$0.00</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Debt Service:</th>
+                                                        <td id="currentDebtService">$0.00</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Infrastructure Reserve:</th>
+                                                        <td id="currentInfrastructureReserve">$0.00</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Current/Next Year Grants:</th>
+                                                        <td id="currentYearGrants">$0.00</td>
+                                                    </tr>
+                                                    <tr class="table-primary">
+                                                        <th>Net Annual Revenue Need:</th>
+                                                        <td id="currentNetRevenueNeed">$0.00</td>
+                                                    </tr>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        <p>Revenue Gap: <span id="currentRevenueGap">$0</span></p>
+                                        <div class="progress mb-3">
+                                            <div id="currentRevenueBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                        <p>Revenue meets <span id="currentRevenuePercentage">0%</span> of needs</p>
+                                    </div>
+                                </div>
+
+                                <h4>Bill Comparison at Different Usage Levels</h4>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Usage (gallons/month)</th>
+                                                <th>Monthly Bill ($)</th>
+                                                <th>Affordability (% of MHI)</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="currentBillComparison">
+                                            <!-- Filled dynamically by JavaScript -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Future Tier Structure Analysis -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h3 class="card-title mb-0">Future Tier Structure Analysis</h3>
+                            </div>
+                            <div class="card-body">
+                                <h4>Monthly Estimated Bill Breakdown</h4>
+                                <div class="table-responsive mb-4">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Tier</th>
+                                                <th>Gallons</th>
+                                                <th>Rate ($/1,000 gal)</th>
+                                                <th>Cost ($)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="futureBillBreakdown">
+                                            <!-- Filled dynamically by JavaScript -->
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th colspan="3" class="text-end">Base Rate</th>
+                                                <td id="futureBaseRateCost">$0.00</td>
+                                            </tr>
+                                            <tr>
+                                                <th colspan="3" class="text-end">Add-on Fee</th>
+                                                <td id="futureAddonFeeCost">$0.00</td>
+                                            </tr>
+                                            <tr>
+                                                <th colspan="3" class="text-end">Total Monthly Bill</th>
+                                                <td id="futureTotalBill">$0.00</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+
+                                <h4>Affordability Analysis</h4>
+                                <div class="row mb-4">
+                                    <div class="col-md-6">
+                                        <p>Monthly bill as percentage of Median Household Income: <span id="futureAffordabilityMHI">0.00%</span></p>
+                                        <div class="progress mb-3">
+                                            <div id="futureAffordabilityBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span>0%</span>
+                                            <span class="text-danger">EPA Threshold: 2.5%</span>
+                                            <span>10%</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <canvas id="futureRevenuePieChart"></canvas>
+                                    </div>
+                                </div>
+
+                                <h4>Revenue Status</h4>
+                                <div class="row mb-4">
+                                    <div class="col-md-12">
+                                        <p>Annual Revenue: <span id="futureAnnualRevenue">$0</span></p>
+                                        <p>Annual Revenue Need: <span id="futureAnnualRevenueNeed">$0</span></p>
+                                        <div class="card mb-3">
+                                            <div class="card-header bg-light">
+                                                <h5 class="mb-0">Financial Planning Factors</h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <table class="table table-sm">                                                    <tr>
+                                                        <th>Operating Costs:</th>
+                                                        <td id="futureOperatingCost">$0.00</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Debt Service:</th>
+                                                        <td id="futureDebtService">$0.00</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Infrastructure Reserve:</th>
+                                                        <td id="futureInfrastructureReserve">$0.00</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Near-Term Grants:</th>
+                                                        <td id="futureGrantFunding">$0.00</td>
+                                                    </tr>
+                                                    <tr class="table-primary">
+                                                        <th>Net Annual Revenue Need:</th>
+                                                        <td id="futureNetRevenueNeed">$0.00</td>
+                                                    </tr>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        <p>Revenue Gap: <span id="futureRevenueGap">$0</span></p>
+                                        <div class="progress mb-3">
+                                            <div id="futureRevenueBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                        <p>Revenue meets <span id="futureRevenuePercentage">0%</span> of needs</p>
+                                    </div>
+                                </div>
+
+                                <h4>Bill Comparison at Different Usage Levels</h4>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Usage (gallons/month)</th>
+                                                <th>Monthly Bill ($)</th>
+                                                <th>Affordability (% of MHI)</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="futureBillComparison">
+                                            <!-- Filled dynamically by JavaScript -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+
+
+                        <!-- Rate Comparison Section -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h3 class="card-title mb-0">Rate Structure Revenue Comparison</h3>
+                            </div>
+                            <div class="card-body">
+<!-- Move this chart section from the projection section to the rate comparison section -->
+<div class="chart-container" id="tierRevenueChartContainer">
+  <canvas id="tierRevenueChart"></canvas>
+  <p class="chart-description">This chart compares how revenue is distributed across different rate components in your current vs. future rate structure.</p>
+</div>
+                            </div>
+                        </div>               
+                         <!-- Long-term Projection Section -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h3 class="card-title mb-0">Long-term Rate and Reserve Projection</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container mb-4">
+                                    <canvas id="projectionChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                         <!-- Long-term Projection Section -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h3 class="card-title mb-0">Rate Structure Changes Over Time</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container mb-4">
+                                    <canvas id="rateChangeChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Water Loss Impact Section -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h3 class="card-title mb-0">Water Loss Impact</h3>
+                            </div>
+                            <div class="card-body">                        <div class="chart-container mb-4">
+                                <canvas id="waterLossChart"></canvas>
+                            </div>
+                            <div class="table-toggle-container">
+                                <button class="table-toggle-btn" data-target="waterLossTableContainer">
+                                    <i class="fas fa-table"></i> Show Data Table
+                                </button>
+                                <div id="waterLossTableContainer" class="collapsible-table-container collapsed">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered">
+                                            <thead>
+                                                <tr>
+                                                    <th>Year</th>
+                                                    <th>Total Production (gallons)</th>
+                                                    <th>Lost Water (gallons)</th>
+                                                    <th>Revenue Lost ($)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="waterLossTable">
+                                                <!-- Filled dynamically by JavaScript -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Poverty-Level Affordability Section -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h3 class="card-title mb-0">Poverty-Level Affordability Analysis</h3>
+                        </div>
+                        <div class="card-body">                        <div class="chart-container mb-4">
+                            <canvas id="povertyAffordabilityChart"></canvas>
+                        </div>
+                        <div class="table-toggle-container">
+                            <button class="table-toggle-btn" data-target="povertyTableContainer">
+                                <i class="fas fa-table"></i> Show Data Table
+                            </button>
+                            <div id="povertyTableContainer" class="collapsible-table-container collapsed">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Year</th>
+                                                <th>Water Bill ($)</th>
+                                                <th>% of Poverty Level Income</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="povertyAffordabilityTable">
+                                            <!-- Filled dynamically by JavaScript -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div> <!-- End of results-section -->
+
+                <!-- Math Explanation Modal -->
+                <div class="modal fade" id="mathModal" tabindex="-1" aria-labelledby="mathModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="mathModalLabel">Calculation Methodology</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body" id="mathExplanation">
+                                <!-- Filled dynamically by JavaScript -->
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+<!-- Help Modal (Updated for Accessibility) -->
+<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="helpModalLabel">Water Pricing Calculator Help</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="accordion" id="helpAccordion">
+                    <!-- Tool Overview -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingOverview">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOverview" aria-expanded="true" aria-controls="collapseOverview">
+                                <i class="bi bi-info-circle me-2"></i> Tool Overview
+                            </button>
+                        </h2>
+                        <div id="collapseOverview" class="accordion-collapse collapse show" aria-labelledby="headingOverview" data-bs-parent="#helpAccordion">
+                            <div class="accordion-body">
+                                <p>The Oka' Institute Water Pricing Calculator helps rural and tribal water utilities plan sustainable water rates that:</p>
+                                <ul>
+                                    <li><strong>Achieve full-cost recovery</strong> for operations, maintenance, debt, and infrastructure</li>
+                                    <li><strong>Ensure affordability</strong> based on EPA guidelines (2.5% of Median Household Income)</li>
+                                    <li><strong>Project long-term financial health</strong> for your water system</li>
+                                </ul>
+                                <p>All calculations run in your browser - no data is stored on any server.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Getting Started -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingGettingStarted">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGettingStarted" aria-expanded="false" aria-controls="collapseGettingStarted">
+                                <i class="bi bi-1-circle me-2"></i> Getting Started
+                            </button>
+                        </h2>
+                        <div id="collapseGettingStarted" class="accordion-collapse collapse" aria-labelledby="headingGettingStarted" data-bs-parent="#helpAccordion">
+                            <div class="accordion-body">
+                                <p>To get started quickly:</p>
+                                <ol>
+                                    <li>Select a sample scenario from the dropdown that most closely matches your community</li>
+                                    <li>Adjust the input values to match your specific situation</li>
+                                    <li>Scroll down to see the automatically generated results</li>
+                                </ol>
+                                <p><strong>Tip:</strong> Use the <kbd>Export</kbd> button to save your work at any time. You can later use the <kbd>Import</kbd> button to reload all your data.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Key Concepts -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingKeyConcepts">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseKeyConcepts" aria-expanded="false" aria-controls="collapseKeyConcepts">
+                                <i class="bi bi-lightbulb me-2"></i> Key Concepts
+                            </button>
+                        </h2>
+                        <div id="collapseKeyConcepts" class="accordion-collapse collapse" aria-labelledby="headingKeyConcepts" data-bs-parent="#helpAccordion">
+                            <div class="accordion-body">
+                                <dl>
+                                    <dt>Full-Cost Recovery</dt>
+                                    <dd>Setting rates that cover all costs to operate, maintain, and eventually replace your water system.</dd>
+                                    
+                                    <dt>MHI (Median Household Income)</dt>
+                                    <dd>The middle value of household incomes in your community - 50% of households earn more, 50% earn less.</dd>
+                                    
+                                    <dt>EPA Affordability Threshold</dt>
+                                    <dd>The EPA suggests water bills should not exceed 2.5% of a community's MHI to remain affordable.</dd>
+                                    
+                                    <dt>Tiered Rate Structure</dt>
+                                    <dd>A billing system that charges different rates for different levels of water usage.</dd>
+                                    
+                                    <dt>O&M Costs</dt>
+                                    <dd>Operations and Maintenance costs - day-to-day expenses like staff, chemicals, electricity, and repairs.</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Input Sections Explained -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingInputs">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseInputs" aria-expanded="false" aria-controls="collapseInputs">
+                                <i class="bi bi-input-cursor me-2"></i> Input Sections Explained
+                            </button>
+                        </h2>
+                        <div id="collapseInputs" class="accordion-collapse collapse" aria-labelledby="headingInputs" data-bs-parent="#helpAccordion">
+                            <div class="accordion-body">
+                                <ul>
+                                    <li><strong>Community Information:</strong> Population and income data needed for affordability analysis</li>
+                                    <li><strong>System Information:</strong> Current customer count, usage, and water loss</li>
+                                    <li><strong>Financial Information:</strong> Current costs, debt, and infrastructure needs</li>
+                                    <li><strong>Loans and Debt:</strong> Add existing or planned loans</li>
+                                    <li><strong>Capital Projects:</strong> Future infrastructure investments</li>
+                                    <li><strong>Grants:</strong> Financial assistance that won't need to be repaid</li>
+                                    <li><strong>Current Rate Structure:</strong> Your existing water rates</li>
+                                    <li><strong>Future Rate Structure:</strong> Proposed changes to your rates</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Results Explained -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingResults">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseResults" aria-expanded="false" aria-controls="collapseResults">
+                                <i class="bi bi-graph-up me-2"></i> Results Explained
+                            </button>
+                        </h2>
+                        <div id="collapseResults" class="accordion-collapse collapse" aria-labelledby="headingResults" data-bs-parent="#helpAccordion">
+                            <div class="accordion-body">
+                                <ul>
+                                    <li><strong>Bill Breakdowns:</strong> Shows exactly how bills are calculated under each rate structure</li>
+                                    <li><strong>Affordability Analysis:</strong> Compares water bills to income levels</li>
+                                    <li><strong>Revenue Status:</strong> Shows if your rates will generate enough money to cover expenses</li>
+                                    <li><strong>Long-term Projections:</strong> Charts how costs and reserves will change over time</li>
+                                    <li><strong>Water Loss Impact:</strong> Quantifies revenue lost due to leaks</li>
+                                    <li><strong>Poverty-Level Affordability:</strong> Shows impacts on lower-income residents</li>
+                                </ul>
+                                <p><strong>Note:</strong> Red indicators show areas of concern that may need adjustment.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tool Functions -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingFunctions">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFunctions" aria-expanded="false" aria-controls="collapseFunctions">
+                                <i class="bi bi-tools me-2"></i> Tool Functions
+                            </button>
+                        </h2>
+                        <div id="collapseFunctions" class="accordion-collapse collapse" aria-labelledby="headingFunctions" data-bs-parent="#helpAccordion">
+                            <div class="accordion-body">
+                                <dl>
+                                    <dt><i class="bi bi-arrows-collapse"></i> Collapse Inputs</dt>
+                                    <dd>Toggles all input sections open or closed for easier navigation</dd>
+                                    
+                                    <dt><i class="bi bi-download"></i> Export</dt>
+                                    <dd>Saves all your data to a CSV file that you can store for later use</dd>
+                                    
+                                    <dt><i class="bi bi-upload"></i> Import</dt>
+                                    <dd>Loads previously saved data from a CSV file</dd>
+                                    
+                                    <dt><i class="bi bi-calculator"></i> Show Math</dt>
+                                    <dd>Displays the detailed calculations behind the results</dd>
+                                    
+                                    <dt><i class="bi bi-question-circle"></i> Help</dt>
+                                    <dd>Opens this help documentation</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="helpModalCloseBtn">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+    </main>
+    
+    <!-- SHOW MATH SECTION -->
+    <section id="mathSection" class="container my-4" style="display:none;">
+        <h2>Calculation Details</h2>
+        <div id="mathDetails"></div>
+    </section>
+
+    <!-- BACK TO TOP BUTTON -->
+    <!-- BACK TO TOP BUTTON -->
+    <button id="backToTop" class="btn btn-light position-fixed rounded-circle shadow-sm border-0" 
+            style="bottom: 30px; right: 30px; width: 48px; height: 48px; display: none; z-index: 9999; opacity: 0.9; transition: all 0.3s ease;">
+        <i class="bi bi-arrow-up text-primary"></i>
+    </button>
+
+    <!-- HIDDEN FILE INPUT FOR CSV IMPORT -->
+    <input type="file" id="importCSV" accept=".csv" style="display:none;" />
+
+    <!-- SCRIPTS -->    <script src="js/app.js"></script>
+    <script src="js/inputs.js"></script>
+    <script src="js/scenarios.js"></script>
+    <script src="js/calculations.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/financial-planning.js"></script>
+    <script src="js/collapsible-tables.js"></script>
+    <!-- JavaScript Libraries --><script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<!-- Toast Notifications Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="scenarioToast" class="toast" role="alert" aria-live="polite" aria-atomic="true">
+        <div class="toast-header bg-success text-white">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            <strong class="me-auto">Success</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="scenarioToastMessage">
+            Scenario loaded successfully.
+        </div>
+    </div>
+</div>
+</body>
+</html>
