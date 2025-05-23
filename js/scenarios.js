@@ -31,12 +31,14 @@ const predefinedScenarios = {
         interestAdjustment: 0.2,
         targetReserve: 150000,
         targetYear: 8,
+        // In the small_rural scenario definition
         loans: [
             {
                 name: "Storage Tank Loan",
                 amount: 200000,
                 interestRate: 2.5,
-                term: 20
+                term: 20,
+                year: 0  // Add a default year (0 = current year)
             }
         ],
         projects: [
@@ -108,13 +110,15 @@ const predefinedScenarios = {
                 name: "Treatment Plant Upgrade",
                 amount: 750000,
                 interestRate: 3.2,
-                term: 25
+                term: 25,
+                year: 0  // Add this line
             },
             {
                 name: "Water Tower Maintenance",
                 amount: 125000,
                 interestRate: 2.8,
-                term: 10
+                term: 10,
+                year: 0  // Add this line
             }
         ],
         projects: [
@@ -197,19 +201,22 @@ const predefinedScenarios = {
                 name: "Water Supply Reservoir Project",
                 amount: 2500000,
                 interestRate: 3.0,
-                term: 30
+                term: 30,
+                year: 0  // Add this line
             },
             {
                 name: "Treatment Plant Expansion",
                 amount: 1200000,
                 interestRate: 2.9,
-                term: 25
+                term: 25,
+                year: 0  // Add this line
             },
             {
                 name: "Energy Efficiency Upgrades",
                 amount: 450000,
                 interestRate: 2.5,
-                term: 15
+                term: 15,
+                year: 0  // Add this line
             }
         ],
         projects: [
@@ -303,25 +310,29 @@ const predefinedScenarios = {
                 name: "Integrated Water System Plan",
                 amount: 4500000,
                 interestRate: 3.1,
-                term: 30
+                term: 30,
+                year: 0  // Add this line
             },
             {
                 name: "Distribution Network Modernization",
                 amount: 2800000,
                 interestRate: 2.9,
-                term: 25
+                term: 25,
+                year: 0  // Add this line
             },
             {
                 name: "Treatment Technology Upgrade",
                 amount: 1200000,
                 interestRate: 2.5,
-                term: 20
+                term: 20,
+                year: 0  // Add this line
             },
             {
                 name: "Emergency Interconnection Project",
                 amount: 850000,
                 interestRate: 2.2,
-                term: 15
+                term: 15,
+                year: 0  // Add this line
             }
         ],
         projects: [
@@ -427,7 +438,8 @@ const predefinedScenarios = {
                 name: "Water Tower Rehab Loan",
                 amount: 400000,
                 interestRate: 2.5,
-                term: 15
+                term: 15,
+                year: 2  // Add this line
             }
         ],
         projects: [
@@ -493,7 +505,8 @@ const predefinedScenarios = {
                 name: "Distribution Main Replacement Loan",
                 amount: 900000,
                 interestRate: 2.8,
-                term: 20
+                term: 20,
+                year: 3  // Add this line
             }
         ],
         projects: [
@@ -559,7 +572,8 @@ const predefinedScenarios = {
                 name: "Plant Expansion Loan",
                 amount: 1500000,
                 interestRate: 3.1,
-                term: 25
+                term: 25,
+                year: 4  // Add this line
             }
         ],
         projects: [
@@ -625,7 +639,8 @@ const predefinedScenarios = {
                 name: "Transmission Main Loan",
                 amount: 3000000,
                 interestRate: 3.5,
-                term: 30
+                term: 30,
+                year: 6  // Add this line
             }
         ],
         projects: [
@@ -666,7 +681,85 @@ const predefinedScenarios = {
     }
 };
 
-// Replace the loadScenario function declaration with this fixed version:
+/**
+ * Helper function to update input values that might be sliders
+ * @param {string} id - The element ID
+ * @param {string|number} value - Value to set
+ */
+function updateInputValue(id, value) {
+    const element = document.getElementById(id);
+    if (!element) {
+        console.warn(`Element with ID ${id} not found`);
+        return;
+    }
+    
+    // Set value
+    element.value = value;
+    
+    // Update both types of display spans directly
+    // For native sliders (e.g., belowPovertySlider → belowPovertyValue)
+    const valueSpanId = id.replace('Slider', 'Value');
+    const valueSpan = document.getElementById(valueSpanId);
+    if (valueSpan) {
+        valueSpan.textContent = value;
+    }
+    
+    // For converted inputs (e.g., medianIncome → medianIncomeDisplay)
+    const displaySpan = document.getElementById(`${id}Display`);
+    if (displaySpan) {
+        displaySpan.textContent = value;
+    }
+    
+    // Dispatch input event to update displays
+    element.dispatchEvent(new Event('input'));
+    
+    // Dispatch change event to trigger calculations
+    element.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+/**
+ * Refresh all slider displays to ensure values are shown correctly
+ * This handles both native sliders and those converted from number inputs
+ */
+function refreshAllSliderDisplays() {
+    // Native sliders - these have ...Value spans
+    const nativeSliders = [
+        'belowPovertySlider', 'waterLossSlider', 'interestRateSlider', 
+        'assetLifespanSlider', 'inflationRateSlider', 'customerGrowthSlider',
+        'interestAdjustmentSlider', 'targetYearSlider'
+    ];
+    
+    // Converted inputs - these have ...Display spans created by slider-converter.js
+    const convertedInputs = [
+        'medianIncome', 'povertyIncome', 'customerCount', 'avgMonthlyUsage',
+        'operatingCost', 'debtPayments', 'debtTerm', 'infrastructureCost',
+        'projectionPeriod', 'targetReserve', 'currentBaseRate', 'currentAddonFee',
+        'futureBaseRate', 'futureAddonFee'
+    ];
+    
+    // Tier inputs that might be converted to sliders
+    const tierInputs = [];
+    for (let i = 1; i <= 4; i++) {
+        tierInputs.push(
+            `currentTier${i}Limit`, `currentTier${i}Rate`,
+            `futureTier${i}Limit`, `futureTier${i}Rate`
+        );
+    }
+    
+    // Update all sliders by triggering input event
+    [...nativeSliders, ...convertedInputs, ...tierInputs].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            console.log(`Refreshing display for ${id}`);
+            element.dispatchEvent(new Event('input'));
+        }
+    });
+    
+    // Also trigger updateSliderDisplays function if it exists
+    if (typeof updateSliderDisplays === 'function') {
+        updateSliderDisplays();
+    }
+}
 
 /**
  * Load a predefined scenario into the application
@@ -697,8 +790,8 @@ function loadScenario(scenarioId) {
     document.getElementById('povertyIncome').value = scenario.povertyIncome;
     appState.povertyIncome = scenario.povertyIncome;
     
-    document.getElementById('belowPovertySlider').value = scenario.belowPovertyPercent;
-    document.getElementById('belowPovertyValue').textContent = scenario.belowPovertyPercent;
+    // Use helper function for sliders
+    updateInputValue('belowPovertySlider', scenario.belowPovertyPercent);
     appState.belowPovertyPercent = scenario.belowPovertyPercent;
     
     // Set system information
@@ -708,8 +801,8 @@ function loadScenario(scenarioId) {
     document.getElementById('avgMonthlyUsage').value = scenario.avgMonthlyUsage;
     appState.avgMonthlyUsage = scenario.avgMonthlyUsage;
     
-    document.getElementById('waterLossSlider').value = scenario.waterLossPercent;
-    document.getElementById('waterLossValue').textContent = scenario.waterLossPercent;
+    // Use helper function for sliders
+    updateInputValue('waterLossSlider', scenario.waterLossPercent);
     appState.waterLossPercent = scenario.waterLossPercent;
     
     // Set usage comparison levels
@@ -729,51 +822,46 @@ function loadScenario(scenarioId) {
     document.getElementById('infrastructureCost').value = scenario.infrastructureCost;
     appState.infrastructureCost = scenario.infrastructureCost;
     
-    document.getElementById('interestRateSlider').value = scenario.interestRate;
-    document.getElementById('interestRateValue').textContent = scenario.interestRate;
+    // Use helper function for sliders
+    updateInputValue('interestRateSlider', scenario.interestRate);
     appState.interestRate = scenario.interestRate;
     
-    document.getElementById('assetLifespanSlider').value = scenario.assetLifespan;
-    document.getElementById('assetLifespanValue').textContent = scenario.assetLifespan;
+    updateInputValue('assetLifespanSlider', scenario.assetLifespan);
     appState.assetLifespan = scenario.assetLifespan;
     
     document.getElementById('projectionPeriod').value = scenario.projectionPeriod;
     appState.projectionPeriod = scenario.projectionPeriod;
     
-    document.getElementById('inflationRateSlider').value = scenario.inflationRate;
-    document.getElementById('inflationRateValue').textContent = scenario.inflationRate;
+    updateInputValue('inflationRateSlider', scenario.inflationRate);
     appState.inflationRate = scenario.inflationRate;
     
-    document.getElementById('customerGrowthSlider').value = scenario.customerGrowthRate;
-    document.getElementById('customerGrowthValue').textContent = scenario.customerGrowthRate;
+    updateInputValue('customerGrowthSlider', scenario.customerGrowthRate);
     appState.customerGrowthRate = scenario.customerGrowthRate;
     
-    document.getElementById('interestAdjustmentSlider').value = scenario.interestAdjustment;
-    document.getElementById('interestAdjustmentValue').textContent = scenario.interestAdjustment;
+    updateInputValue('interestAdjustmentSlider', scenario.interestAdjustment);
     appState.interestAdjustment = scenario.interestAdjustment;
     
     document.getElementById('targetReserve').value = scenario.targetReserve;
     appState.targetReserve = scenario.targetReserve;
     
-    document.getElementById('targetYearSlider').value = scenario.targetYear;
-    document.getElementById('targetYearValue').textContent = scenario.targetYear;
+    updateInputValue('targetYearSlider', scenario.targetYear);
     appState.targetYear = scenario.targetYear;
     
-    // Set current rate structure
-    document.getElementById('currentBaseRate').value = scenario.currentRates.baseRate;
+    // Set current rate structure using updateInputValue helper
+    updateInputValue('currentBaseRate', scenario.currentRates.baseRate);
     appState.currentBaseRate = scenario.currentRates.baseRate;
     
-    document.getElementById('currentAddonFee').value = scenario.currentRates.addonFee;
+    updateInputValue('currentAddonFee', scenario.currentRates.addonFee);
     appState.currentAddonFee = scenario.currentRates.addonFee;
     
     // Set current tiers
     setTiersFromScenario("current", scenario.currentRates.tiers);
     
-    // Set future rate structure
-    document.getElementById('futureBaseRate').value = scenario.futureRates.baseRate;
+    // Set future rate structure using updateInputValue helper
+    updateInputValue('futureBaseRate', scenario.futureRates.baseRate);
     appState.futureBaseRate = scenario.futureRates.baseRate;
     
-    document.getElementById('futureAddonFee').value = scenario.futureRates.addonFee;
+    updateInputValue('futureAddonFee', scenario.futureRates.addonFee);
     appState.futureAddonFee = scenario.futureRates.addonFee;
     
     // Set future tiers
@@ -788,44 +876,80 @@ function loadScenario(scenarioId) {
     appState.grants = [];
     
     // Add loan entries from scenario
+    // In the loadScenario function
     scenario.loans.forEach(loan => {
-        addLoanEntry(loan);
+        // Create a normalized loan object with consistent property names
+        const normalizedLoan = {
+            name: loan.name,
+            amount: Number(loan.amount || loan.principal || 0),
+            interest: Number(loan.interestRate !== undefined ? loan.interestRate : (loan.interest || loan.rate || 0)),
+            term: Number(loan.term || 0),
+            year: Number(loan.year || 0) // Add this line to include the year property
+        };
+        
+        addLoanEntry(normalizedLoan);
     });
-    
+
     // Add project entries from scenario
     scenario.projects.forEach(project => {
-        addProjectEntry(project);
+        // Create a normalized project object with consistent property names
+        const normalizedProject = {
+            name: project.name,
+            cost: Number(project.cost || 0),
+            year: Number(project.year || 0),
+            funding: project.fundingSource || project.funding || 'reserves'
+        };
+        
+        addProjectEntry(normalizedProject);
     });
-    
-    // Add grant entries from scenario
+
+    // Add grant entries from scenario (no property name changes needed)
     scenario.grants.forEach(grant => {
-        addGrantEntry(grant);
+        const normalizedGrant = {
+            name: grant.name,
+            amount: Number(grant.amount || 0),
+            year: Number(grant.year || 0)
+        };
+        
+        addGrantEntry(normalizedGrant);
     });
+
+    // Also ensure other critical numeric values are properly converted
+    appState.targetReserve = Number(appState.targetReserve || 0);
+    appState.operatingCost = Number(appState.operatingCost || 0);
+    appState.debtPayments = Number(appState.debtPayments || 0);
+    appState.infrastructureCost = Number(appState.infrastructureCost || 0);
+    appState.customerCount = Number(appState.customerCount || 0);
+    appState.avgMonthlyUsage = Number(appState.avgMonthlyUsage || 0);
+
+    // Add console logging to help debug - can remove after fixing
+    // console.log("After scenario load, appState:", JSON.stringify(appState, null, 2));
     
     // Recalculate everything with new values
     calculateAll();
+        refreshAllSliderDisplays();
     
-// Show toast notification instead of alert
-const toastMessage = document.getElementById('scenarioToastMessage');
-const toastElement = document.getElementById('scenarioToast');
+    // Show toast notification instead of alert
+    const toastMessage = document.getElementById('scenarioToastMessage');
+    const toastElement = document.getElementById('scenarioToast');
 
-if (toastMessage && toastElement) {
-    toastMessage.textContent = `Loaded scenario: ${scenario.name}`;
-    
-    // Check if Bootstrap is available before using it
-    if (typeof bootstrap !== 'undefined') {
-        const toast = new bootstrap.Toast(toastElement);
-        toast.show();
+    if (toastMessage && toastElement) {
+        toastMessage.textContent = `Loaded scenario: ${scenario.name}`;
+        
+        // Check if Bootstrap is available before using it
+        if (typeof bootstrap !== 'undefined') {
+            const toast = new bootstrap.Toast(toastElement);
+            toast.show();
+        } else {
+            // Fallback for when Bootstrap JS isn't loaded
+            console.warn("Bootstrap not available, using fallback notification");
+            toastElement.style.display = 'block';
+            setTimeout(() => { toastElement.style.display = 'none'; }, 3000);
+        }
     } else {
-        // Fallback for when Bootstrap JS isn't loaded
-        console.warn("Bootstrap not available, using fallback notification");
-        toastElement.style.display = 'block';
-        setTimeout(() => { toastElement.style.display = 'none'; }, 3000);
+        // Fallback if toast elements aren't found
+        console.log(`Scenario loaded: ${scenario.name}`);
     }
-} else {
-    // Fallback if toast elements aren't found
-    console.log(`Scenario loaded: ${scenario.name}`);
-}
 }
 
 /**
@@ -840,21 +964,33 @@ function setTiersFromScenario(type, tiers) {
         
         // Check if elements exist before setting properties
         // Try both potential ID formats to be safe
-        const checkbox = document.getElementById(`${type}Tier${tierNum}Enabled`) || 
-                          document.getElementById(`${type}Tier${tierNum}Checkbox`);
-        const limitField = document.getElementById(`${type}Tier${tierNum}Limit`);
-        const rateField = document.getElementById(`${type}Tier${tierNum}Rate`);
+        const checkboxId = `${type}Tier${tierNum}Enabled`;
+        const altCheckboxId = `${type}Tier${tierNum}Checkbox`;
+        const limitId = `${type}Tier${tierNum}Limit`;
+        const rateId = `${type}Tier${tierNum}Rate`;
         
-        // Set values if elements exist
-        if (checkbox) checkbox.checked = scenarioTier.enabled;
+        // Get checkbox element
+        const checkbox = document.getElementById(checkboxId) || document.getElementById(altCheckboxId);
         
-        if (limitField) {
-            limitField.value = scenarioTier.limit;
-            if (checkbox) limitField.disabled = !scenarioTier.enabled;
+        // Set checkbox value
+        if (checkbox) {
+            checkbox.checked = scenarioTier.enabled;
+            // Trigger change event on checkbox to handle any dependent logic
+            checkbox.dispatchEvent(new Event('change', { bubbles: true }));
         }
         
-        if (rateField) {
-            rateField.value = scenarioTier.rate;
+        // Set tier limit using helper function
+        updateInputValue(limitId, scenarioTier.limit);
+        
+        // Set tier rate using helper function
+        updateInputValue(rateId, scenarioTier.rate);
+        
+        // Update disabled state based on enabled status
+        if (checkbox) {
+            const limitField = document.getElementById(limitId);
+            const rateField = document.getElementById(rateId);
+            
+            if (limitField) limitField.disabled = !scenarioTier.enabled;
             if (rateField) rateField.disabled = !scenarioTier.enabled;
         }
         
@@ -862,15 +998,26 @@ function setTiersFromScenario(type, tiers) {
         if (type === "current" && appState.currentTiers) {
             appState.currentTiers[i] = {
                 enabled: scenarioTier.enabled,
-                limit: scenarioTier.limit,
-                rate: scenarioTier.rate
+                limit: Number(scenarioTier.limit),
+                rate: Number(scenarioTier.rate)
             };
         } else if (type === "future" && appState.futureTiers) {
             appState.futureTiers[i] = {
                 enabled: scenarioTier.enabled,
-                limit: scenarioTier.limit,
-                rate: scenarioTier.rate
+                limit: Number(scenarioTier.limit),
+                rate: Number(scenarioTier.rate)
             };
+        }
+    }
+    
+    // Force recalculation of tier structure
+    if (type === "current") {
+        if (typeof calculateCurrentRateStructure === 'function') {
+            calculateCurrentRateStructure();
+        }
+    } else if (type === "future") {
+        if (typeof calculateFutureRateStructure === 'function') {
+            calculateFutureRateStructure();
         }
     }
 }
@@ -961,7 +1108,8 @@ function getExportData() {
             baseRate: appState.futureBaseRate,
             addonFee: appState.futureAddonFee,
             tiers: [...appState.futureTiers]
-        }
+        },
+        debtTerm: appState.debtTerm // Add this new field
     };
     
     return JSON.stringify(exportData, null, 2);
@@ -1042,30 +1190,172 @@ function loadCustomScenario(scenario) {
         console.warn("Invalid custom scenario data.");
         return;
     }
-    
-    // Use the same loading logic as for predefined scenarios
-    // but pass the custom scenario object directly
-    
+
     // Set community information
     document.getElementById('communityName').value = scenario.communityName;
     appState.communityName = scenario.communityName;
     
-    // Continue with the rest of the loading logic
-    // Same as in loadScenario function...
-    
-    // Set all the other properties as in the loadScenario function
     document.getElementById('medianIncome').value = scenario.medianIncome;
     appState.medianIncome = scenario.medianIncome;
     
-    // Continue with all other fields...
+    document.getElementById('povertyIncome').value = scenario.povertyIncome;
+    appState.povertyIncome = scenario.povertyIncome;
+    
+    // Use helper function for sliders
+    updateInputValue('belowPovertySlider', scenario.belowPovertyPercent);
+    appState.belowPovertyPercent = scenario.belowPovertyPercent;
+    
+    // Set system information
+    document.getElementById('customerCount').value = scenario.customerCount;
+    appState.customerCount = scenario.customerCount;
+    
+    document.getElementById('avgMonthlyUsage').value = scenario.avgMonthlyUsage;
+    appState.avgMonthlyUsage = scenario.avgMonthlyUsage;
+    
+    // Use helper function for sliders
+    updateInputValue('waterLossSlider', scenario.waterLossPercent);
+    appState.waterLossPercent = scenario.waterLossPercent;
+    
+    // Set usage comparison levels
+    appState.compareUsageLevels = [...scenario.compareUsageLevels];
+    document.querySelectorAll('input[id^="compareUsage"]').forEach(checkbox => {
+        const value = parseInt(checkbox.value);
+        checkbox.checked = appState.compareUsageLevels.includes(value);
+    });
+    
+    // Set financial information
+    document.getElementById('operatingCost').value = scenario.operatingCost;
+    appState.operatingCost = scenario.operatingCost;
+    
+    document.getElementById('debtPayments').value = scenario.debtPayments;
+    appState.debtPayments = scenario.debtPayments;
+    
+    document.getElementById('infrastructureCost').value = scenario.infrastructureCost;
+    appState.infrastructureCost = scenario.infrastructureCost;
+    
+    // Use helper function for sliders
+    updateInputValue('interestRateSlider', scenario.interestRate);
+    appState.interestRate = scenario.interestRate;
+    
+    updateInputValue('assetLifespanSlider', scenario.assetLifespan);
+    appState.assetLifespan = scenario.assetLifespan;
+    
+    document.getElementById('projectionPeriod').value = scenario.projectionPeriod;
+    appState.projectionPeriod = scenario.projectionPeriod;
+    
+    updateInputValue('inflationRateSlider', scenario.inflationRate);
+    appState.inflationRate = scenario.inflationRate;
+    
+    updateInputValue('customerGrowthSlider', scenario.customerGrowthRate);
+    appState.customerGrowthRate = scenario.customerGrowthRate;
+    
+    updateInputValue('interestAdjustmentSlider', scenario.interestAdjustment);
+    appState.interestAdjustment = scenario.interestAdjustment;
+    
+    document.getElementById('targetReserve').value = scenario.targetReserve;
+    appState.targetReserve = scenario.targetReserve;
+    
+    updateInputValue('targetYearSlider', scenario.targetYear);
+    appState.targetYear = scenario.targetYear;
+    
+    // Set current rate structure using updateInputValue helper
+    updateInputValue('currentBaseRate', scenario.currentRates.baseRate);
+    appState.currentBaseRate = scenario.currentRates.baseRate;
+    
+    updateInputValue('currentAddonFee', scenario.currentRates.addonFee);
+    appState.currentAddonFee = scenario.currentRates.addonFee;
+    
+    // Set current tiers
+    setTiersFromScenario("current", scenario.currentRates.tiers);
+    
+    // Set future rate structure using updateInputValue helper
+    updateInputValue('futureBaseRate', scenario.futureRates.baseRate);
+    appState.futureBaseRate = scenario.futureRates.baseRate;
+    
+    updateInputValue('futureAddonFee', scenario.futureRates.addonFee);
+    appState.futureAddonFee = scenario.futureRates.addonFee;
+    
+    // Set future tiers
+    setTiersFromScenario("future", scenario.futureRates.tiers);
+    
+    // Clear all dynamic entries (loans, projects, grants)
+    clearDynamicEntries();
+    
+    // Reset arrays in appState
+    appState.loans = [];
+    appState.projects = [];
+    appState.grants = [];
+    
+    // Add loan entries from scenario
+    // In the loadCustomScenario function
+    scenario.loans.forEach(loan => {
+        // Create a normalized loan object with consistent property names
+        const normalizedLoan = {
+            name: loan.name,
+            amount: Number(loan.amount || loan.principal || 0),
+            interest: Number(loan.interestRate !== undefined ? loan.interestRate : (loan.interest || loan.rate || 0)),
+            term: Number(loan.term || 0),
+            year: Number(loan.year || 0) // Add this line to include the year property
+        };
+        
+        addLoanEntry(normalizedLoan);
+    });
+
+    // Add project entries from scenario
+    if (scenario.projects && Array.isArray(scenario.projects)) {
+        scenario.projects.forEach(project => {
+            // Create a normalized project object with consistent property names
+            const normalizedProject = {
+                name: project.name,
+                cost: Number(project.cost || 0),
+                year: Number(project.year || 0),
+                funding: project.fundingSource || project.funding || 'reserves'
+            };
+            
+            addProjectEntry(normalizedProject);
+        });
+    }
+
+    // Add grant entries from scenario
+    if (scenario.grants && Array.isArray(scenario.grants)) {
+        scenario.grants.forEach(grant => {
+            const normalizedGrant = {
+                name: grant.name,
+                amount: Number(grant.amount || 0),
+                year: Number(grant.year || 0)
+            };
+            
+            addGrantEntry(normalizedGrant);
+        });
+    }
+
+    // Also ensure other critical numeric values are properly converted
+    appState.targetReserve = Number(appState.targetReserve || 0);
+    appState.operatingCost = Number(appState.operatingCost || 0);
+    appState.debtPayments = Number(appState.debtPayments || 0);
+    appState.infrastructureCost = Number(appState.infrastructureCost || 0);
+    appState.customerCount = Number(appState.customerCount || 0);
+    appState.avgMonthlyUsage = Number(appState.avgMonthlyUsage || 0);
+
+    // Add console logging to help debug - can remove after fixing
+    console.log("After custom scenario load, appState:", JSON.stringify(appState, null, 2));
     
     // Recalculate everything with new values
     calculateAll();
-    
+        refreshAllSliderDisplays();
     // Notify user
-document.getElementById('scenarioToastMessage').textContent = `Imported data for: ${scenario.communityName}`;
-const toast = new bootstrap.Toast(document.getElementById('scenarioToast'));
-toast.show();}
+    const toastMessage = document.getElementById('scenarioToastMessage');
+    const toastElement = document.getElementById('scenarioToast');
+
+    if (toastMessage && toastElement) {
+        toastMessage.textContent = `Imported data for: ${scenario.communityName || 'Custom Scenario'}`;
+        
+        if (typeof bootstrap !== 'undefined') {
+            const toast = new bootstrap.Toast(toastElement);
+            toast.show();
+        }
+    }
+}
 
 // Reset event handlers on page load
 document.addEventListener('DOMContentLoaded', function() {

@@ -19,7 +19,9 @@ const CONSTANTS = {
         { threshold: 0.015, label: 'Affordable', class: 'bg-success' },
         { threshold: 0.025, label: 'Moderate', class: 'bg-warning' },
         { threshold: 1, label: 'Burdensome', class: 'bg-danger' }
-    ]
+    ],
+    DEFAULT_PROJECT_LOAN_INTEREST_RATE_PERCENT: 3.0, // Default annual interest rate for project loans
+    DEFAULT_PROJECT_LOAN_TERM_YEARS: 20,             // Default term for project loans
 };
 
 /**
@@ -49,27 +51,30 @@ function calculateCurrentRateStructure() {
         return;
     }
     
-    // Calculate tier breakdown for average usage
+    const currentRateStructure = {
+        baseRate: appState.currentBaseRate,
+        addonFee: appState.currentAddonFee,
+        tiers: appState.currentTiers
+    };
+    
+    // Get comprehensive financial snapshot
+    const financialSnapshot = calculateFinancialSnapshot(currentRateStructure, 0);
+    
+    // Calculate tier breakdown for average usage (still needed for UI display)
     const tierBreakdown = calculateTierBreakdown(
         appState.avgMonthlyUsage,
         appState.currentTiers
     );
     
-    // Base rate and add-on fee
-    const baseRateCost = appState.currentBaseRate;
-    const addonFeeCost = appState.currentAddonFee;
-    
-    // Total monthly bill
-    const totalBill = tierBreakdown.totalCost + baseRateCost + addonFeeCost;
-    
-    // Affordability as % of MHI
+    // Affordability calculation
+    const totalBill = tierBreakdown.totalCost + financialSnapshot.baseRateCost + financialSnapshot.addonFeeCost;
     const monthlyMHI = appState.medianIncome / CONSTANTS.MONTHS_PER_YEAR;
     const affordabilityMHI = monthlyMHI > 0 ? (totalBill / monthlyMHI) : 0;
     
     // Revenue pie chart data
     const revenuePieData = [
-        { label: 'Base Rate', value: baseRateCost },
-        { label: 'Add-on Fee', value: addonFeeCost }
+        { label: 'Base Rate', value: financialSnapshot.baseRateCost },
+        { label: 'Add-on Fee', value: financialSnapshot.addonFeeCost }
     ];
     
     // Add tier segments to pie chart
@@ -81,40 +86,6 @@ function calculateCurrentRateStructure() {
             });
         }
     });
-    
-    // Calculate annual revenue and need
-    const annualRevenue = calculateAnnualRevenue(
-        appState.customerCount,
-        totalBill
-    );
-    
-    // Calculate any current year grants
-    let currentYearGrants = 0;
-    const currentYear = new Date().getFullYear();
-    appState.grants.forEach(grant => {
-        if (grant.year === 0 || grant.year === 1) { // Current or next year
-            currentYearGrants += grant.amount;
-        }
-    });
-      // Current revenue need components
-    const operatingCost = appState.operatingCost;
-    
-    // Use the consolidated debt payment calculation from financial-planning.js
-    updateFinancialPlanningState(); // Make sure financial data is updated
-    calculateDebtPayments(); // Calculate and update debt in appState
-    
-    const debtPayments = appState.totalDebtPayments || appState.debtPayments;
-    const infrastructureReserve = calculateInfrastructureReserve();
-    
-    // Calculate total revenue need with grant offsets
-    const annualRevenueNeed = calculateAnnualRevenueNeed(
-        operatingCost,
-        debtPayments,
-        infrastructureReserve
-    ) - currentYearGrants;
-    
-    const revenueGap = annualRevenueNeed - annualRevenue;
-    const revenuePercentage = annualRevenueNeed > 0 ? (annualRevenue / annualRevenueNeed) * 100 : 0;
     
     // Bill comparison at different usage levels
     const billComparison = [];
@@ -125,7 +96,7 @@ function calculateCurrentRateStructure() {
             appState.currentTiers
         );
         
-        const comparisonBill = comparisonBreakdown.totalCost + baseRateCost + addonFeeCost;
+        const comparisonBill = comparisonBreakdown.totalCost + financialSnapshot.baseRateCost + financialSnapshot.addonFeeCost;
         const comparisonAffordability = monthlyMHI > 0 ? (comparisonBill / monthlyMHI) : 0;
         const status = getAffordabilityStatus(comparisonAffordability);
         
@@ -137,57 +108,62 @@ function calculateCurrentRateStructure() {
         });
     });
     
-    // Store results in appState
+    // Store results in appState, maintaining existing structure expected by UI
     appState.currentResults = {
         tierBreakdown: tierBreakdown.tiers,
-        baseRateCost: baseRateCost,
-        addonFeeCost: addonFeeCost,
+        baseRateCost: financialSnapshot.baseRateCost,
+        addonFeeCost: financialSnapshot.addonFeeCost,
         totalBill: totalBill,
         affordabilityMHI: affordabilityMHI,
         revenuePieData: revenuePieData,
-        annualRevenue: annualRevenue,
-        annualRevenueNeed: annualRevenueNeed,
-        currentYearGrants: currentYearGrants,        operatingCost: operatingCost,
-        existingDebtPayments: appState.existingDebtPayments,
-        nearTermProjectDebt: appState.nearTermProjectDebt,
-        totalDebtPayments: debtPayments,
-        infrastructureReserve: infrastructureReserve,
-        revenueGap: revenueGap,
-        revenuePercentage: revenuePercentage,
+        annualRevenue: financialSnapshot.totalAnnualRevenue,
+        annualRevenueNeed: financialSnapshot.netAnnualRevenueNeed,
+        currentYearGrants: financialSnapshot.grantsForYear,
+        operatingCost: financialSnapshot.operatingCost,
+        existingDebtPayments: financialSnapshot.existingDebtPayments,
+        nearTermProjectDebt: financialSnapshot.projectDebtPayments,
+        totalDebtPayments: financialSnapshot.totalDebtPayments,
+        infrastructureReserve: financialSnapshot.infrastructureReserve,
+        revenueGap: financialSnapshot.revenueGap,
+        revenuePercentage: financialSnapshot.revenuePercentage,
         billComparison: billComparison
     };
 }
 
 /**
  * Calculate results for the future rate structure
+ * Enhanced to use the consolidated financial snapshot function
  */
 function calculateFutureRateStructure() {
     if (!validateCalculationInputs()) {
         console.warn('Invalid inputs for future rate calculation');
         return;
     }
+    // console.log('[DEBUG] In calculateFutureRateStructure - appState.debtTerm:', appState.debtTerm, 'appState.debtPayments:', appState.debtPayments); 
+    const futureRateStructure = {
+        baseRate: appState.futureBaseRate,
+        addonFee: appState.futureAddonFee,
+        tiers: appState.futureTiers
+    };
     
-    // Calculate tier breakdown for average usage
+    // Get comprehensive financial snapshot (using 1 as analysis year to capture different grants)
+    const financialSnapshot = calculateFinancialSnapshot(futureRateStructure, 1);
+    
+    // Calculate tier breakdown for average usage (still needed for UI display)
     const tierBreakdown = calculateTierBreakdown(
         appState.avgMonthlyUsage,
         appState.futureTiers
     );
     
-    // Base rate and add-on fee
-    const baseRateCost = appState.futureBaseRate;
-    const addonFeeCost = appState.futureAddonFee;
-    
-    // Total monthly bill
-    const totalBill = tierBreakdown.totalCost + baseRateCost + addonFeeCost;
-    
-    // Affordability as % of MHI
+    // Affordability calculation
+    const totalBill = tierBreakdown.totalCost + financialSnapshot.baseRateCost + financialSnapshot.addonFeeCost;
     const monthlyMHI = appState.medianIncome / CONSTANTS.MONTHS_PER_YEAR;
     const affordabilityMHI = monthlyMHI > 0 ? (totalBill / monthlyMHI) : 0;
     
     // Revenue pie chart data
     const revenuePieData = [
-        { label: 'Base Rate', value: baseRateCost },
-        { label: 'Add-on Fee', value: addonFeeCost }
+        { label: 'Base Rate', value: financialSnapshot.baseRateCost },
+        { label: 'Add-on Fee', value: financialSnapshot.addonFeeCost }
     ];
     
     // Add tier segments to pie chart
@@ -200,33 +176,6 @@ function calculateFutureRateStructure() {
         }
     });
     
-    // Calculate annual revenue and need
-    const annualRevenue = calculateAnnualRevenue(
-        appState.customerCount,
-        totalBill
-    );
-      // Calculate near-term grants (years 0-2)
-    let nearTermGrants = 0;
-    appState.grants.forEach(grant => {
-        if (grant.year <= 2) { // Current through year 2
-            nearTermGrants += grant.amount;
-        }
-    });
-    
-    // Use the consolidated debt payment calculation from financial-planning.js
-    updateFinancialPlanningState(); // Make sure financial data is updated
-    calculateDebtPayments(); // Calculate and update debt in appState
-    
-    // Adjust revenue need calculation to include debt and grants
-    const annualRevenueNeed = calculateAnnualRevenueNeed(
-        appState.operatingCost,
-        appState.totalDebtPayments, // Use consolidated debt value
-        calculateInfrastructureReserve()
-    ) - nearTermGrants;
-    
-    const revenueGap = annualRevenueNeed - annualRevenue;
-    const revenuePercentage = annualRevenueNeed > 0 ? (annualRevenue / annualRevenueNeed) * 100 : 0;
-    
     // Bill comparison at different usage levels
     const billComparison = [];
     
@@ -236,7 +185,7 @@ function calculateFutureRateStructure() {
             appState.futureTiers
         );
         
-        const comparisonBill = comparisonBreakdown.totalCost + baseRateCost + addonFeeCost;
+        const comparisonBill = comparisonBreakdown.totalCost + financialSnapshot.baseRateCost + financialSnapshot.addonFeeCost;
         const comparisonAffordability = monthlyMHI > 0 ? (comparisonBill / monthlyMHI) : 0;
         const status = getAffordabilityStatus(comparisonAffordability);
         
@@ -248,25 +197,32 @@ function calculateFutureRateStructure() {
         });
     });
     
-    // Store results in appState
+    // Store results in appState, maintaining existing structure
     appState.futureResults = {
         tierBreakdown: tierBreakdown.tiers,
-        baseRateCost: baseRateCost,
-        addonFeeCost: addonFeeCost,
+        baseRateCost: financialSnapshot.baseRateCost,
+        addonFeeCost: financialSnapshot.addonFeeCost,
         totalBill: totalBill,
         affordabilityMHI: affordabilityMHI,
         revenuePieData: revenuePieData,
-        annualRevenue: annualRevenue,
-        annualRevenueNeed: annualRevenueNeed,        nearTermGrants: nearTermGrants,
-        existingDebtPayments: appState.existingDebtPayments,
-        nearTermProjectDebt: appState.nearTermProjectDebt,
-        totalDebtPayments: appState.totalDebtPayments,
-        operatingCost: appState.operatingCost,
-        infrastructureReserve: calculateInfrastructureReserve(),
-        revenueGap: revenueGap,
-        revenuePercentage: revenuePercentage,
+        annualRevenue: financialSnapshot.totalAnnualRevenue,
+        annualRevenueNeed: financialSnapshot.netAnnualRevenueNeed,
+        nearTermGrants: financialSnapshot.grantsForYear,
+        existingDebtPayments: financialSnapshot.existingDebtPayments,
+        nearTermProjectDebt: financialSnapshot.projectDebtPayments,
+        totalDebtPayments: financialSnapshot.totalDebtPayments,
+        operatingCost: financialSnapshot.operatingCost,
+        infrastructureReserve: financialSnapshot.infrastructureReserve,
+        revenueGap: financialSnapshot.revenueGap,
+        revenuePercentage: financialSnapshot.revenuePercentage,
         billComparison: billComparison
     };
+    
+    // Add a warning if the intelligent recommendation system is enabled
+    if (appState.rateRecommendations) {
+        appState.futureResults.recommendationWarning =
+            'Note: The Financial Advisor Recommendations section below provides an optimal, data-driven rate structure and transition plan. Use this manual section for experimentation only.';
+    }
 }
 
 /**
@@ -291,314 +247,512 @@ function calculateLongTermProjections() {
     const currentYear = new Date().getFullYear();
     let currentReserves = 0;
     
+    // Debt projection breakdown with enhanced year tracking
+    const debtProjection = {
+        years: [],
+        existingDebt: [],
+        projectDebt: [],
+        newLoanDebt: [],
+        loansByYear: {} // New: track which loans start in which year
+    };
+    
     for (let year = 0; year <= appState.projectionPeriod; year++) {
-        // Year
-        const projectionYear = currentYear + year;
-        years.push(projectionYear);
+        // Get current or future rates based on year
+        const useCurrentRates = (year === 0);
+        const baseRate = useCurrentRates ? appState.currentBaseRate : appState.futureBaseRate;
+        const addonFee = useCurrentRates ? appState.currentAddonFee : appState.futureAddonFee;
+        const tiers = useCurrentRates ? appState.currentTiers : appState.futureTiers;
         
-        // Calculate customer growth
+        // Calculate customer count with growth
         const customerGrowthFactor = Math.pow(1 + (appState.customerGrowthRate / 100), year);
-        const projectedCustomers = appState.customerCount * customerGrowthFactor;
+        const yearCustomerCount = appState.customerCount * customerGrowthFactor;
         
-        // Calculate inflation factor
+        // Calculate operating cost with inflation
         const inflationFactor = Math.pow(1 + (appState.inflationRate / 100), year);
+        const yearOperatingCost = appState.operatingCost * inflationFactor;
         
-        // Calculate interest rate for this year
-        const interestRateForYear = Math.max(0, appState.interestRate + (appState.interestAdjustment * year / 100));
-          // Calculate O&M costs with inflation
-        const projectedOM = appState.operatingCost * inflationFactor;
+        // Track existing debt service with term limit
+        let existingDebtService = 0;
+        if (appState.debtPayments > 0) {
+            // Only include manual debt entry if we're within its term
+            if (year < (appState.debtTerm || 20)) {
+                existingDebtService = appState.debtPayments;
+            }
+        }
         
-        // Calculate debt service for this projection year
-        // Start with existing debt from consolidated debt calculation
-        let projectedDebtService = appState.existingDebtPayments || appState.debtPayments;
+        // Track project debt payments for this year
+        let projectDebtService = 0;
+        let newLoanDebtService = 0;
         
-        // Add loan payments from projects based on their specified year
-        // Track which projects are included to avoid double-counting
+        // Track loans by year information for tooltips
+        const projectYears = [];
+        const newLoanYears = [];
+        
+        // Calculate manual loan payments
         const includedProjects = new Set();
         
-        // For near-term projects that are already included in nearTermProjectDebt
-        if (year <= 2 && appState.nearTermProjectDebt > 0) {
-            projectedDebtService = appState.totalDebtPayments; // Use the pre-calculated total including near-term projects
-            
-            // Mark near-term projects as already included
+        // First, collect all project names from the projects array
+        if (appState.projects && appState.projects.length > 0) {
             appState.projects.forEach(project => {
-                if (project.funding === 'loan' && (project.year === 0 || project.year === 1)) {
-                    includedProjects.add(project.name || project.cost.toString());
+                if (project.funding === 'loan' && project.name) {
+                    includedProjects.add(project.name.trim().toLowerCase());
                 }
             });
         }
         
-        // Add loan payments from projects not already counted
-        appState.projects.forEach(project => {
-            const projectId = project.name || project.cost.toString();
+        // Enhanced loan handling section with improved year handling
+        appState.loans.forEach(loan => {
+            // Only include loan if:
+            // 1. Its start year has been reached or is undefined 
+            // 2. The current projection year hasn't exceeded the loan term
+            const loanStartYear = loan.year || 0;
+            const loanTerm = loan.term || 20; // Default to 20 years if not specified
+            const loanEndYear = loanStartYear + loanTerm;
             
-            // Only include if:
-            // 1. Project is loan funded
-            // 2. Project year has been reached in the projection
-            // 3. Project wasn't already counted in nearTermProjectDebt
-            if (project.funding === 'loan' && 
-                project.year <= year && 
-                project.year > 1 && // Only projects beyond year 1 that weren't counted in nearTermProjectDebt
-                !includedProjects.has(projectId)) {
-                
-                // Calculate loan payment for this project
+            // Check if this loan is active in the current projection year
+            if (loanStartYear <= year && year < loanEndYear) {
                 const projectLoan = {
-                    amount: project.cost,
-                    interest: appState.interestRate || 5, // Use current interest rate or default to 5%
-                    term: appState.assetLifespan || 20 // Use asset lifespan or default to 20 years
+                    amount: loan.amount,
+                    interest: loan.interest / 100,
+                    term: loan.term
                 };
                 
                 const annualPayment = calculateAnnualLoanPayment(projectLoan);
-                projectedDebtService += annualPayment;
-            }
-        });
-        
-        // Calculate capital reserve contribution needed
-        let capitalReserveContribution = 0;
-        
-        if (appState.targetYear > 0 && appState.targetReserve > 0) {
-            const yearsToTarget = appState.targetYear - year;
-            if (yearsToTarget > 0) {
-                // Calculate how much to contribute each year to reach target
-                // Simple straight-line approach for now
-                const remainingToTarget = appState.targetReserve - currentReserves;
-                if (remainingToTarget > 0) {
-                    capitalReserveContribution = remainingToTarget / yearsToTarget;
-                }
-            } else {
-                // After target year, contribute a maintenance amount based on asset depreciation
-                capitalReserveContribution = appState.infrastructureCost / appState.assetLifespan;
-            }
-        } else {
-            // If no target is set, use a simple depreciation-based contribution
-            capitalReserveContribution = appState.infrastructureCost / (appState.assetLifespan || 20);
-        }
-        
-        // Check for capital projects funded from reserves
-        appState.projects.forEach(project => {
-            if (project.funding === 'reserves' && project.year === year) {
-                // Deduct from reserves or add to contribution if not enough reserves
-                if (currentReserves >= project.cost) {
-                    currentReserves -= project.cost;
+                
+                // Check if this is a project loan by name rather than flag
+                const isProjectLoan = loan.name && includedProjects.has(loan.name.trim().toLowerCase());
+                
+                // Categorize the debt service based on loan type
+                if (isProjectLoan) {
+                    projectDebtService += annualPayment;
+                    if (loan.year > 0) {
+                        projectYears.push(loan.year);
+                    }
                 } else {
-                    // If not enough reserves, increase contribution to cover shortfall
-                    capitalReserveContribution += (project.cost - currentReserves) / 1; // Pay in 1 year
-                    currentReserves = 0;
+                    newLoanDebtService += annualPayment;
+                    if (loan.year > 0) {
+                        newLoanYears.push(loan.year);
+                    }
+                }
+                
+                // Store loan in year tracking for debt projection display
+                const loanYear = loan.year || 0;
+                if (!debtProjection.loansByYear[loanYear]) {
+                    debtProjection.loansByYear[loanYear] = [];
+                }
+                
+                debtProjection.loansByYear[loanYear].push({
+                    name: loan.name || 'Unnamed Loan',
+                    amount: loan.amount,
+                    payment: annualPayment,
+                    term: loanTerm,
+                    type: isProjectLoan ? 'project' : 'loan', // Use the name-based check here too
+                    endYear: loanEndYear
+                });
+            }
+        });        
+        // Process projects with loan funding separately to avoid double-counting
+        appState.projects.forEach(project => {
+            // Skip if already tracked or not in the projection period
+            if (includedProjects.has(project.name) || project.year > year) {
+                return;
+            }
+            
+            // Only include project debt if it's funded by a loan and we're within the loan term
+            if (project.funding === 'loan') {
+                const projectStartYear = project.year || 0;
+                const projectTerm = appState.assetLifespan || 20; // Use asset lifespan as loan term
+                const projectEndYear = projectStartYear + projectTerm;
+                
+                // Only include if we're within the loan term: started but not yet paid off
+                if (projectStartYear <= year && year < projectEndYear) {
+                    const projectLoan = {
+                        amount: project.cost,
+                        interest: appState.interestRate / 100 || 0.05, // Default to 5%
+                        term: projectTerm
+                    };
+                    
+                    const annualPayment = calculateAnnualLoanPayment(projectLoan);
+                    projectDebtService += annualPayment;
+                    
+                    // Track the project year for tooltip display
+                    if (project.year > 0) {
+                        projectYears.push(project.year);
+                    }
+                    
+                    // Store project in year tracking for debt projection display
+                    const projectYear = project.year || 0;
+                    if (!debtProjection.loansByYear[projectYear]) {
+                        debtProjection.loansByYear[projectYear] = [];
+                    }
+                    
+                    debtProjection.loansByYear[projectYear].push({
+                        name: project.name || 'Unnamed Project',
+                        amount: project.cost,
+                        payment: annualPayment,
+                        term: projectTerm, // Include the term for display
+                        type: 'project',
+                        endYear: projectEndYear // Store when this project debt will be paid off
+                    });
+                    
+                    // Track this project to avoid double-counting
+                    includedProjects.add(project.name);
                 }
             }
-        });
+            });        
+        // Calculate total debt service
+        const yearDebtService = existingDebtService + projectDebtService + newLoanDebtService;
         
-        // Add grants for this year
-        let grantsForYear = 0;
-        appState.grants.forEach(grant => {
-            if (grant.year === year) {
-                grantsForYear += grant.amount;
+        // Calculate infrastructure funding need with inflation
+        const yearInfrastructureFunding = calculateInfrastructureReserve() * inflationFactor;
+        
+        // Calculate total revenue need
+        const yearRevenueNeed = yearOperatingCost + yearDebtService + yearInfrastructureFunding;
+        
+        // Calculate revenue based on rate structure
+        let yearRevenue;
+        if (useCurrentRates) {
+            yearRevenue = appState.currentResults?.annualRevenue || 0;
+        } else {
+            yearRevenue = appState.futureResults?.annualRevenue || 0;
+        }
+        // Apply customer growth
+        yearRevenue *= customerGrowthFactor;
+        
+        // Update accumulated reserves
+        const yearNetRevenue = yearRevenue - yearRevenueNeed;
+        currentReserves += yearNetRevenue;
+        
+        // Store data for charts
+        years.push(currentYear + year);
+        revenueNeeds.push(Math.round(yearRevenueNeed));
+        revenue.push(Math.round(yearRevenue));
+        reserves.push(Math.round(currentReserves));
+        
+        // Store rate transition data
+        baseRates.push(baseRate);
+        addonFees.push(addonFee);
+        for (let i = 0; i < 4; i++) {
+            if (i < tiers.length && tiers[i].enabled) {
+                tierRates[i].push(tiers[i].rate);
+            } else {
+                tierRates[i].push(null);
+            }
+        }
+        
+        // Store debt projection data
+        debtProjection.years.push(year);
+        debtProjection.existingDebt.push(existingDebtService);
+        debtProjection.projectDebt.push(projectDebtService);
+        debtProjection.newLoanDebt.push(newLoanDebtService);
+    }
+    
+    // Store loan year breakdown for financial projections
+    const projection = [];
+    for (let i = 0; i <= appState.projectionPeriod; i++) {
+        // Create a breakdown of debt by start year for this projection year
+        const debtByStartYear = {};
+        
+        // Examine all loans that have started by this projection year
+        Object.keys(debtProjection.loansByYear || {}).forEach(startYear => {
+            const startYearNum = parseInt(startYear);
+            
+            // Only include loans that have started by this projection year
+            if (startYearNum <= i) {
+                // Sum up all loan payments for the start year
+                const yearDebt = debtProjection.loansByYear[startYear].reduce((sum, loan) => sum + loan.payment, 0);
+                
+                // Store in our breakdown
+                debtByStartYear[startYear] = yearDebt;
             }
         });
         
-        // Calculate total revenue needs for this year
-        const totalRevenueNeed = projectedOM + projectedDebtService + capitalReserveContribution - grantsForYear;
-        revenueNeeds.push(totalRevenueNeed);
-        
-        // Calculate revenue from rates
-        let projectedRevenue;
-        
-        if (year === 0) {
-            // Current year uses current rates
-            projectedRevenue = appState.currentResults.annualRevenue;
-            
-            // Set initial rates
-            baseRates.push(appState.currentBaseRate);
-            addonFees.push(appState.currentAddonFee);
-            for (let t = 0; t < 4; t++) {
-                tierRates[t].push(appState.currentTiers[t].enabled ? appState.currentTiers[t].rate : 0);
-            }
-        } else {
-            // Calculate a linear transition from current to future rates based on target year
-            const transitionYears = appState.targetYear || appState.projectionPeriod;
-            const transitionFactor = Math.min(1, year / transitionYears);
-            
-            const currentRevenue = appState.currentResults.annualRevenue;
-            const futureRevenue = appState.futureResults.annualRevenue;
-            
-            // Linear interpolation between current and future revenue
-            const baseRevenue = currentRevenue + (futureRevenue - currentRevenue) * transitionFactor;
-            
-            // Track rate changes
-            const baseRate = appState.currentBaseRate + (appState.futureBaseRate - appState.currentBaseRate) * transitionFactor;
-            const addonFee = appState.currentAddonFee + (appState.futureAddonFee - appState.currentAddonFee) * transitionFactor;
-            
-            baseRates.push(baseRate);
-            addonFees.push(addonFee);
-            
-            for (let t = 0; t < 4; t++) {
-                const currentRate = appState.currentTiers[t].enabled ? appState.currentTiers[t].rate : 0;
-                const futureRate = appState.futureTiers[t].enabled ? appState.futureTiers[t].rate : 0;
-                const tierRate = currentRate + (futureRate - currentRate) * transitionFactor;
-                tierRates[t].push(tierRate);
-            }
-            
-            // Adjust for customer growth
-            projectedRevenue = baseRevenue * customerGrowthFactor;
-        }
-        
-        revenue.push(projectedRevenue);
-        
-        // Update reserves for next year
-        const reserveContribution = Math.min(capitalReserveContribution, projectedRevenue - projectedOM - projectedDebtService);
-        const reserveInterest = currentReserves * (interestRateForYear / 100);
-        
-        currentReserves += reserveContribution + reserveInterest;
-        reserves.push(currentReserves);
+        // Create detailed projection entry with the debt breakdown
+        projection.push({
+            year: currentYear + i,
+            projectionYear: i,
+            revenueNeed: revenueNeeds[i],
+            revenue: revenue[i],
+            reserveBalance: reserves[i],
+            totalDebtService: debtProjection.existingDebt[i] + debtProjection.projectDebt[i] + debtProjection.newLoanDebt[i],
+            existingDebtService: debtProjection.existingDebt[i],
+            projectDebtService: debtProjection.projectDebt[i], 
+            newLoanDebtService: debtProjection.newLoanDebt[i],
+            debtByStartYear: debtByStartYear
+        });
     }
-      // Store results in appState
-    appState.projectionResults = {
-        years: years,
-        revenueNeeds: revenueNeeds,
-        revenue: revenue,
-        reserves: reserves,
-        baseRates: baseRates,
-        addonFees: addonFees,
-        tierRates: tierRates
+    
+    // Store projection data in appState
+    appState.projection = projection;
+    appState.longTermProjection = {
+        years,
+        revenueNeeds,
+        revenue,
+        reserves,
+        baseRates,
+        addonFees,
+        tierRates
     };
+    
+    // Store debt projection data
+    appState.debtProjection = debtProjection;
+}
+function updateWaterLossAndPovertyAnalysis() {
+  // Make sure required values exist
+  if (!appState.customerCount || !appState.avgMonthlyUsage || 
+      !appState.waterLossPercent || !appState.povertyIncome) {
+    console.warn('Missing required data for water loss and poverty analysis');
+    return;
+  }
+  
+  const waterLossPercentage = appState.waterLossPercent / 100;
+  const totalAnnualWater = appState.customerCount * appState.avgMonthlyUsage * 12;
+  const waterLossVolume = totalAnnualWater * waterLossPercentage / (1 - waterLossPercentage); // Corrected formula
+  
+  // Calculate monthly bill for current structure
+  const currentAvgBill = calculateTotalBill(
+    appState.avgMonthlyUsage, 
+    appState.currentBaseRate, 
+    appState.currentAddonFee,
+    appState.currentTiers
+  );
+  
+  const currentAnnualRevenue = appState.customerCount * currentAvgBill * 12;
+  // Use getWeightedAvgRate instead of calculateWeightedAvgRate
+  const currentWaterLossFinancial = waterLossVolume / 1000 * getWeightedAvgRate('current');
+const currentWaterLossPercent = currentWaterLossFinancial / currentAnnualRevenue;  
+  // Calculate poverty affordability - monthly bill as percentage of MONTHLY poverty income
+  const monthlyPovertyIncome = appState.povertyIncome / 12;
+ const currentPovertyPercent = (currentAvgBill / monthlyPovertyIncome); // REMOVE * 100  
+  // Calculate monthly bill for future structure
+  const futureAvgBill = calculateTotalBill(
+    appState.avgMonthlyUsage, 
+    appState.futureBaseRate, 
+    appState.futureAddonFee,
+    appState.futureTiers
+  );
+  
+  const futureAnnualRevenue = appState.customerCount * futureAvgBill * 12;
+  // Use getWeightedAvgRate instead of calculateWeightedAvgRate
+  const futureWaterLossFinancial = waterLossVolume / 1000 * getWeightedAvgRate('future');
+ const futureWaterLossPercent = futureWaterLossFinancial / futureAnnualRevenue;
+ const futurePovertyPercent = (futureAvgBill / monthlyPovertyIncome); // REMOVE * 100
+  
+  // Store results in appState for reference elsewhere
+  appState.waterLossResults = {
+    waterLossVolume,
+    currentWaterLossFinancial,
+    currentWaterLossPercent,
+    futureWaterLossFinancial,
+    futureWaterLossPercent,
+    currentPovertyPercent,
+    futurePovertyPercent
+  };
+  
+  // Update DOM - use safelyUpdateElement to prevent errors
+  safelyUpdateElement('currentWaterLossVolume', formatNumber(waterLossVolume) + ' gal');
+  safelyUpdateElement('currentWaterLossFinancial', formatCurrency(currentWaterLossFinancial));
+ safelyUpdateElement('currentWaterLossPercent', formatPercentage(currentWaterLossPercent));
+   safelyUpdateElement('currentAvgBill', formatCurrency(currentAvgBill));
+safelyUpdateElement('currentPovertyPercent', formatPercentage(currentPovertyPercent));
+
+  // Update poverty status with appropriate comparison of decimal values
+  const currentPovertyStatus = document.getElementById('currentPovertyStatus');
+  if (currentPovertyStatus) {
+    if (currentPovertyPercent > 0.05) {  // 5% as decimal
+      currentPovertyStatus.textContent = "High Burden";
+      currentPovertyStatus.className = "badge bg-danger";
+    } else if (currentPovertyPercent > 0.03) {  // 3% as decimal
+      currentPovertyStatus.textContent = "Moderate Burden";
+      currentPovertyStatus.className = "badge bg-warning text-dark";
+    } else {
+      currentPovertyStatus.textContent = "Affordable";
+      currentPovertyStatus.className = "badge bg-success";
+    }
+  }
+  
+  // Update DOM - Future
+  safelyUpdateElement('futureWaterLossVolume', formatNumber(waterLossVolume) + ' gal');
+  safelyUpdateElement('futureWaterLossFinancial', formatCurrency(futureWaterLossFinancial));
+safelyUpdateElement('futureWaterLossPercent', formatPercentage(futureWaterLossPercent));
+  safelyUpdateElement('futureAvgBill', formatCurrency(futureAvgBill));
+safelyUpdateElement('futurePovertyPercent', formatPercentage(futurePovertyPercent));
+
+  // Update poverty status
+  const futurePovertyStatus = document.getElementById('futurePovertyStatus');
+  if (futurePovertyStatus) {
+    if (futurePovertyPercent > 0.05) {  // 5% as decimal
+      futurePovertyStatus.textContent = "High Burden";
+      futurePovertyStatus.className = "badge bg-danger";
+    } else if (futurePovertyPercent > 0.03) {  // 3% as decimal
+      futurePovertyStatus.textContent = "Moderate Burden";
+      futurePovertyStatus.className = "badge bg-warning text-dark";
+    } else {
+      futurePovertyStatus.textContent = "Affordable";
+      futurePovertyStatus.className = "badge bg-success";
+    }
+  }
 }
 
-/**
- * Calculate water loss impact
- */
-function calculateWaterLossImpact() {
-    if (!validateCalculationInputs() || appState.projectionPeriod <= 0) {
-        console.warn('Invalid inputs for water loss impact calculation');
-        return;
-    }
-    
-    const years = [];
-    const totalProduction = [];
-    const lostWater = [];
-    const revenueLost = [];
-    
-    const currentYear = new Date().getFullYear();
-    
-    for (let year = 0; year <= appState.projectionPeriod; year++) {
-        // Year
-        const projectionYear = currentYear + year;
-        years.push(projectionYear);
-        
-        // Calculate customer growth
-        const customerGrowthFactor = Math.pow(1 + (appState.customerGrowthRate / 100), year);
-        const projectedCustomers = appState.customerCount * customerGrowthFactor;
-        
-        // Calculate total monthly water usage
-        const projectedMonthlyUsage = appState.avgMonthlyUsage * projectedCustomers;
-        const projectedAnnualUsage = projectedMonthlyUsage * CONSTANTS.MONTHS_PER_YEAR;
-        
-        // Calculate total water produced based on water loss percentage
-        const waterLossFactor = 1 / (1 - (appState.waterLossPercent / 100));
-        const projectedAnnualProduction = projectedAnnualUsage * waterLossFactor;
-        
-        // Calculate water lost
-        const waterLost = projectedAnnualProduction - projectedAnnualUsage;
-        
-        // Calculate average rate per 1000 gallons
-        let averageRate;
-        if (year === 0) {
-            // Current year uses current rates
-            const currentTotalBill = calculateTotalBill(appState.avgMonthlyUsage, appState.currentBaseRate, appState.currentAddonFee, appState.currentTiers);
-            averageRate = currentTotalBill / (appState.avgMonthlyUsage / CONSTANTS.GALLONS_PER_1000);
-        } else {
-            // Calculate a linear transition from current to future rates based on target year
-            const transitionYears = appState.targetYear || appState.projectionPeriod;
-            const transitionFactor = Math.min(1, year / transitionYears);
-            
-            const currentTotalBill = calculateTotalBill(appState.avgMonthlyUsage, appState.currentBaseRate, appState.currentAddonFee, appState.currentTiers);
-            const futureTotalBill = calculateTotalBill(appState.avgMonthlyUsage, appState.futureBaseRate, appState.futureAddonFee, appState.futureTiers);
-            
-            const projectedBill = currentTotalBill + (futureTotalBill - currentTotalBill) * transitionFactor;
-            averageRate = projectedBill / (appState.avgMonthlyUsage / CONSTANTS.GALLONS_PER_1000);
-        }
-        
-        // Calculate revenue lost to water loss
-        const projectedRevenueLost = (waterLost / CONSTANTS.GALLONS_PER_1000) * averageRate;
-        
-        totalProduction.push(Math.round(projectedAnnualProduction));
-        lostWater.push(Math.round(waterLost));
-        revenueLost.push(projectedRevenueLost);
-    }
-    
-    // Store results in appState
-    appState.waterLossResults = {
-        years: years,
-        totalProduction: totalProduction,
-        lostWater: lostWater,
-        revenueLost: revenueLost
-    };
+// Improved weighted average rate calculation that actually uses all tiers
+function getWeightedAvgRate(structure) {
+  let tiers, baseRate, addonFee;
+  
+  if (structure === 'current') {
+    tiers = appState.currentTiers || [];
+    baseRate = appState.currentBaseRate || 0;
+    addonFee = appState.currentAddonFee || 0;
+  } else {
+    tiers = appState.futureTiers || [];
+    baseRate = appState.futureBaseRate || 0;
+    addonFee = appState.futureAddonFee || 0;
+  }
+  
+  // Calculate total cost for average usage
+  const tierBreakdown = calculateTierBreakdown(appState.avgMonthlyUsage, tiers);
+  const totalCost = tierBreakdown.totalCost + baseRate + addonFee;
+  
+  // Return weighted average rate per 1000 gallons
+  if (appState.avgMonthlyUsage <= 0) return 5; // Default fallback
+  return (totalCost * 1000) / appState.avgMonthlyUsage;
 }
 
-/**
- * Calculate poverty-level affordability
- */
-function calculatePovertyAffordability() {
-    if (!validateCalculationInputs() || appState.projectionPeriod <= 0 || appState.povertyIncome <= 0) {
-        console.warn('Invalid inputs for poverty affordability calculation');
-        return;
-    }
+// /**
+//  * Calculate water loss impact
+//  */
+// function calculateWaterLossImpact() {
+//     if (!validateCalculationInputs() || appState.projectionPeriod <= 0) {
+//         console.warn('Invalid inputs for water loss impact calculation');
+//         return;
+//     }
     
-    const years = [];
-    const waterBill = [];
-    const percentOfIncome = [];
-    const status = [];
+//     const years = [];
+//     const totalProduction = [];
+//     const lostWater = [];
+//     const revenueLost = [];
     
-    const currentYear = new Date().getFullYear();
+//     const currentYear = new Date().getFullYear();
     
-    for (let year = 0; year <= appState.projectionPeriod; year++) {
-        // Year
-        const projectionYear = currentYear + year;
-        years.push(projectionYear);
+//     for (let year = 0; year <= appState.projectionPeriod; year++) {
+//         // Year
+//         const projectionYear = currentYear + year;
+//         years.push(projectionYear);
         
-        // Calculate poverty income with inflation
-        const inflationFactor = Math.pow(1 + (appState.inflationRate / 100), year);
-        const projectedPovertyIncome = appState.povertyIncome * inflationFactor;
-        const monthlyPovertyIncome = projectedPovertyIncome / CONSTANTS.MONTHS_PER_YEAR;
+//         // Calculate customer growth
+//         const customerGrowthFactor = Math.pow(1 + (appState.customerGrowthRate / 100), year);
+//         const projectedCustomers = appState.customerCount * customerGrowthFactor;
         
-        // Calculate water bill for the year
-        let projectedMonthlyBill;
+//         // Calculate total monthly water usage
+//         const projectedMonthlyUsage = appState.avgMonthlyUsage * projectedCustomers;
+//         const projectedAnnualUsage = projectedMonthlyUsage * CONSTANTS.MONTHS_PER_YEAR;
         
-        if (year === 0) {
-            // Current year uses current rates
-            projectedMonthlyBill = appState.currentResults.totalBill;
-        } else {
-            // Calculate a linear transition from current to future rates based on target year
-            const transitionYears = appState.targetYear || appState.projectionPeriod;
-            const transitionFactor = Math.min(1, year / transitionYears);
+//         // Calculate total water produced based on water loss percentage
+//         const waterLossFactor = 1 / (1 - (appState.waterLossPercent / 100));
+//         const projectedAnnualProduction = projectedAnnualUsage * waterLossFactor;
+        
+//         // Calculate water lost
+//         const waterLost = projectedAnnualProduction - projectedAnnualUsage;
+        
+//         // Calculate average rate per 1000 gallons
+//         let averageRate;
+//         if (year === 0) {
+//             // Current year uses current rates
+//             const currentTotalBill = calculateTotalBill(appState.avgMonthlyUsage, appState.currentBaseRate, appState.currentAddonFee, appState.currentTiers);
+//             averageRate = currentTotalBill / (appState.avgMonthlyUsage / CONSTANTS.GALLONS_PER_1000);
+//         } else {
+//             // Calculate a linear transition from current to future rates based on target year
+//             const transitionYears = appState.targetYear || appState.projectionPeriod;
+//             const transitionFactor = Math.min(1, year / transitionYears);
             
-            const currentTotalBill = appState.currentResults.totalBill;
-            const futureTotalBill = appState.futureResults.totalBill;
+//             const currentTotalBill = calculateTotalBill(appState.avgMonthlyUsage, appState.currentBaseRate, appState.currentAddonFee, appState.currentTiers);
+//             const futureTotalBill = calculateTotalBill(appState.avgMonthlyUsage, appState.futureBaseRate, appState.futureAddonFee, appState.futureTiers);
             
-            projectedMonthlyBill = currentTotalBill + (futureTotalBill - currentTotalBill) * transitionFactor;
-        }
+//             const projectedBill = currentTotalBill + (futureTotalBill - currentTotalBill) * transitionFactor;
+//             averageRate = projectedBill / (appState.avgMonthlyUsage / CONSTANTS.GALLONS_PER_1000);
+//         }
         
-        // Calculate annual water bill
-        const projectedAnnualBill = projectedMonthlyBill * CONSTANTS.MONTHS_PER_YEAR;
+//         // Calculate revenue lost to water loss
+//         const projectedRevenueLost = (waterLost / CONSTANTS.GALLONS_PER_1000) * averageRate;
         
-        // Calculate percentage of poverty income
-        const billPercentage = projectedMonthlyBill / monthlyPovertyIncome;
-        
-        // Determine status
-        const affordabilityStatus = getAffordabilityStatus(billPercentage);
-        
-        waterBill.push(projectedAnnualBill);
-        percentOfIncome.push(billPercentage);
-        status.push(affordabilityStatus);
-    }
+//         totalProduction.push(Math.round(projectedAnnualProduction));
+//         lostWater.push(Math.round(waterLost));
+//         revenueLost.push(projectedRevenueLost);
+//     }
     
-    // Store results in appState
-    appState.povertyResults = {
-        years: years,
-        waterBill: waterBill,
-        percentOfIncome: percentOfIncome,
-        status: status
-    };
-}
+//     // Store results in appState
+//     appState.waterLossResults = {
+//         years: years,
+//         totalProduction: totalProduction,
+//         lostWater: lostWater,
+//         revenueLost: revenueLost
+//     };
+// }
+
+// /**
+//  * Calculate poverty-level affordability
+//  */
+// function calculatePovertyAffordability() {
+//     if (!validateCalculationInputs() || appState.projectionPeriod <= 0 || appState.povertyIncome <= 0) {
+//         console.warn('Invalid inputs for poverty affordability calculation');
+//         return;
+//     }
+    
+//     const years = [];
+//     const waterBill = [];
+//     const percentOfIncome = [];
+//     const status = [];
+    
+//     const currentYear = new Date().getFullYear();
+    
+//     for (let year = 0; year <= appState.projectionPeriod; year++) {
+//         // Year
+//         const projectionYear = currentYear + year;
+//         years.push(projectionYear);
+        
+//         // Calculate poverty income with inflation
+//         const inflationFactor = Math.pow(1 + (appState.inflationRate / 100), year);
+//         const projectedPovertyIncome = appState.povertyIncome * inflationFactor;
+//         const monthlyPovertyIncome = projectedPovertyIncome / CONSTANTS.MONTHS_PER_YEAR;
+        
+//         // Calculate water bill for the year
+//         let projectedMonthlyBill;
+        
+//         if (year === 0) {
+//             // Current year uses current rates
+//             projectedMonthlyBill = appState.currentResults.totalBill;
+//         } else {
+//             // Calculate a linear transition from current to future rates based on target year
+//             const transitionYears = appState.targetYear || appState.projectionPeriod;
+//             const transitionFactor = Math.min(1, year / transitionYears);
+            
+//             const currentTotalBill = appState.currentResults.totalBill;
+//             const futureTotalBill = appState.futureResults.totalBill;
+            
+//             projectedMonthlyBill = currentTotalBill + (futureTotalBill - currentTotalBill) * transitionFactor;
+//         }
+        
+//         // Calculate annual water bill
+//         const projectedAnnualBill = projectedMonthlyBill * CONSTANTS.MONTHS_PER_YEAR;
+        
+//         // Calculate percentage of poverty income
+//         const billPercentage = projectedMonthlyBill / monthlyPovertyIncome;
+        
+//         // Determine status
+//         const affordabilityStatus = getAffordabilityStatus(billPercentage);
+        
+//         waterBill.push(projectedAnnualBill);
+//         percentOfIncome.push(billPercentage);
+//         status.push(affordabilityStatus);
+//     }
+    
+//     // Store results in appState
+//     appState.povertyResults = {
+//         years: years,
+//         waterBill: waterBill,
+//         percentOfIncome: percentOfIncome,
+//         status: status
+//     };
+// }
 
 /**
  * Calculate tier breakdown for a given usage level
@@ -707,28 +861,217 @@ function calculateInfrastructureReserve() {
 
 /**
  * Calculate annual payment for a loan
- * @param {Object} loan - Loan object with principal, rate, and term properties
+ * Enhanced version with improved error handling and zero-interest case
+ * @param {Object} loan - Loan object with amount, interest rate (%), and term properties
  * @returns {number} Annual payment
  */
-function calculateLoanPayment(loan) {
-    const { principal, rate, term } = loan;
+function calculateAnnualLoanPayment(loan) {
+    const principal = loan.amount;
+    const interestRatePercent = loan.interest;
+    const termYears = loan.term;
+    
+    if (principal <= 0 || interestRatePercent < 0 || termYears <= 0) {
+        return 0;
+    }
+    
+    // Use the existing rate/100 pattern from the codebase
+    const rate = interestRatePercent / 100;
     
     if (rate === 0) {
         // No interest, simple division
-        return principal / term;
+        return principal / termYears;
     }
     
-    // Standard loan amortization formula: P = A / ((1 - (1 + r)^-n) / r)
-    // Where:
-    // P = payment
-    // A = loan amount
-    // r = interest rate per period
-    // n = number of periods
+    // Standard loan amortization formula using monthly calculations
+    const monthlyRate = rate / 12;
+    const numberOfPayments = termYears * 12;
     
-    const numerator = principal * rate;
-    const denominator = 1 - Math.pow(1 + rate, -term);
+    const monthlyPayment = principal * (monthlyRate * Math.pow(1 + monthlyRate, numberOfPayments)) /
+                         (Math.pow(1 + monthlyRate, numberOfPayments) - 1);
     
-    return numerator / denominator;
+    if (isNaN(monthlyPayment) || !isFinite(monthlyPayment)) {
+        console.error("Failed to calculate monthly payment. Inputs:", principal, interestRatePercent, termYears);
+        return 0;
+    }
+    
+    return monthlyPayment * 12; // Return annual payment
+}
+
+/**
+ * Calculate system tier revenue - utility function for revenue calculations
+ * @param {number} avgMonthlyUsage - Average monthly water usage per customer (gallons)
+ * @param {number} customerCount - Total number of customers
+ * @param {Array} tiers - Array of tier objects with enabled, limit, and rate properties
+ * @returns {number} Total annual revenue from tiers
+ */
+function calculateSystemTierRevenue(avgMonthlyUsage, customerCount, tiers) {
+    if (customerCount <= 0 || avgMonthlyUsage <= 0 || !tiers || tiers.length === 0) {
+        return 0;
+    }
+    
+    // Calculate revenue for a single customer
+    const tierBreakdown = calculateTierBreakdown(avgMonthlyUsage, tiers);
+    const singleCustomerMonthlyRevenue = tierBreakdown.totalCost;
+    
+    // Multiply by customer count and months to get annual revenue
+    return singleCustomerMonthlyRevenue * customerCount * CONSTANTS.MONTHS_PER_YEAR;
+}
+
+/**
+ * Calculate financial snapshot for a rate structure
+ * @param {Object} rateStructure - Object with baseRate, addonFee, and tiers
+ * @param {number} analysisYear - Year for which to calculate (0-indexed)
+ * @returns {Object} Financial metrics including revenue and costs
+ */
+function calculateFinancialSnapshot(rateStructure, analysisYear = 0) {
+    const results = {
+        baseRateCost: rateStructure.baseRate || 0,
+        addonFeeCost: rateStructure.addonFee || 0,
+        annualRevenueFromBase: 0,
+        annualRevenueFromAddon: 0,
+        annualRevenueFromTiers: 0,
+        totalAnnualRevenue: 0,
+        operatingCost: appState.operatingCost || 0,
+        existingDebtPayments: 0,
+        projectDebtPayments: 0,
+        infrastructureReserve: 0,
+        grantsForYear: 0,
+        netAnnualRevenueNeed: 0,
+        revenueGap: 0,
+        revenuePercentage: 0
+    };
+        if (analysisYear === 1) {
+        // console.log('[DEBUG] In calculateFinancialSnapshot (year 1) - appState.debtTerm:', appState.debtTerm, 'appState.debtPayments:', appState.debtPayments); // Add this
+        // console.log('[DEBUG] Condition check (year 1): analysisYear < (appState.debtTerm || 20) is', analysisYear < (appState.debtTerm || 20)); // Add this
+    }
+    // 1. Calculate revenues
+    const customerCount = appState.customerCount;
+    const avgMonthlyUsage = appState.avgMonthlyUsage;
+    
+    if (customerCount > 0) {
+        results.annualRevenueFromBase = customerCount * results.baseRateCost * CONSTANTS.MONTHS_PER_YEAR;
+        results.annualRevenueFromAddon = customerCount * results.addonFeeCost * CONSTANTS.MONTHS_PER_YEAR;
+        results.annualRevenueFromTiers = calculateSystemTierRevenue(
+            avgMonthlyUsage,
+            customerCount,
+            rateStructure.tiers
+        );
+        results.totalAnnualRevenue = results.annualRevenueFromBase + 
+                                    results.annualRevenueFromAddon + 
+                                    results.annualRevenueFromTiers;
+    }
+    
+    // 2. Calculate financial planning factors
+    
+    // A. Existing debt payments (from manual entry or loan rows)
+    if (appState.debtPayments > 0 && analysisYear < (appState.debtTerm || 20)) {
+        results.existingDebtPayments = appState.debtPayments;
+    }
+    
+    // B. Add debt from loans array
+    const includedProjects = new Set(); // Track project names to avoid double-counting
+    
+    if (appState.loans && appState.loans.length > 0) {
+        appState.loans.forEach(loan => {
+            // Only include if loan's year has been reached and we're within the term
+            const loanStartYear = loan.year || 0;
+            const loanTerm = loan.term || 20;
+            
+            if (loanStartYear <= analysisYear && analysisYear < (loanStartYear + loanTerm)) {
+                const loanObj = {
+                    amount: loan.amount,
+                    interest: loan.interest,
+                    term: loan.term
+                };
+                
+                const payment = calculateAnnualLoanPayment(loanObj);
+                
+                // Track project name to avoid double-counting with projects
+                if (loan.name) {
+                    includedProjects.add(loan.name.trim().toLowerCase());
+                }
+                
+                // Consider all manually entered loans as "existing debt" for simplicity
+                results.existingDebtPayments += payment;
+            }
+        });
+    }
+    
+    // C. Add debt from projects funded by loans (only if not already counted)
+    if (appState.projects && appState.projects.length > 0) {
+        appState.projects.forEach(project => {
+            // Skip if not a loan-funded project or year hasn't been reached
+            if (project.funding !== 'loan' || project.year > analysisYear) {
+                return;
+            }
+            
+            // Skip if this project name matches a loan that's already been counted
+            if (project.name && includedProjects.has(project.name.trim().toLowerCase())) {
+                return;
+            }
+            
+            // Only include if we're within the project loan term
+            const projectStartYear = project.year || 0;
+            const projectTerm = appState.assetLifespan || CONSTANTS.DEFAULT_PROJECT_LOAN_TERM_YEARS;
+            
+            if (projectStartYear <= analysisYear && analysisYear < (projectStartYear + projectTerm)) {
+                const projectLoan = {
+                    amount: project.cost,
+                    interest: appState.interestRate || CONSTANTS.DEFAULT_PROJECT_LOAN_INTEREST_RATE_PERCENT,
+                    term: projectTerm
+                };
+                
+                results.projectDebtPayments += calculateAnnualLoanPayment(projectLoan);
+            }
+        });
+    }
+    
+    // D. Infrastructure reserve (using existing function)
+    results.infrastructureReserve = calculateInfrastructureReserve();
+    
+    // E. Grants for this year
+    if (appState.grants && appState.grants.length > 0) {
+        appState.grants.forEach(grant => {
+            if (grant.year === analysisYear) {
+                results.grantsForYear += grant.amount;
+            }
+        });
+    }
+    
+    // 3. Calculate net revenue need
+    const totalDebtPayments = results.existingDebtPayments + results.projectDebtPayments;
+    results.totalDebtPayments = totalDebtPayments;
+    
+    results.netAnnualRevenueNeed = results.operatingCost +
+                                 totalDebtPayments +
+                                 results.infrastructureReserve -
+                                 results.grantsForYear;
+    
+    // 4. Revenue gap and percentage
+    results.revenueGap = results.totalAnnualRevenue - results.netAnnualRevenueNeed;
+    
+    if (results.netAnnualRevenueNeed > 0) {
+        results.revenuePercentage = (results.totalAnnualRevenue / results.netAnnualRevenueNeed) * 100;
+    } else if (results.totalAnnualRevenue > 0) {
+        results.revenuePercentage = 100;
+    } else {
+        results.revenuePercentage = 0;
+    }
+    
+    return results;
+}
+
+/**
+ * Calculate the total bill for a given usage level
+ * @param {number} usage - Water usage in gallons
+ * @param {number} baseRate - Base rate in dollars
+ * @param {number} addonFee - Add-on fee in dollars
+ * @param {Array} tiers - Array of tier objects with enabled, limit, and rate properties
+ * @returns {number} Total bill amount
+ */
+function calculateTotalBill(usage, baseRate, addonFee, tiers) {
+    const tierBreakdown = calculateTierBreakdown(usage, tiers);
+    return tierBreakdown.totalCost + baseRate + addonFee;
 }
 
 /**
@@ -793,9 +1136,8 @@ function updateResultsTables() {
     if (typeof updateDebtServiceDisplay === 'function') {
         updateDebtServiceDisplay();
     } else {
-        // Fallback if function not available
-        safelyUpdateElement('currentDebtService', formatCurrency(appState.totalDebtPayments));
-    }
+        // Corrected fallback
+        safelyUpdateElement('currentDebtService', formatCurrency(appState.currentResults.totalDebtPayments));    }
     
     safelyUpdateElement('currentInfrastructureReserve', formatCurrency(appState.currentResults.infrastructureReserve));
     safelyUpdateElement('currentYearGrants', formatCurrency(appState.currentResults.currentYearGrants));
@@ -825,7 +1167,7 @@ function updateResultsTables() {
     
     // Use the same debt service display function for future debt
     // The updateDebtServiceDisplay function will update both current and future tables
-    
+safelyUpdateElement('futureDebtService', formatCurrency(appState.futureResults.totalDebtPayments));
     safelyUpdateElement('futureInfrastructureReserve', formatCurrency(appState.futureResults.infrastructureReserve));
     safelyUpdateElement('futureGrantFunding', formatCurrency(appState.futureResults.nearTermGrants));
     safelyUpdateElement('futureNetRevenueNeed', formatCurrency(appState.futureResults.annualRevenueNeed));
@@ -833,11 +1175,11 @@ function updateResultsTables() {
     // Future bill comparison
     updateBillComparisonTable('futureBillComparison', appState.futureResults.billComparison);
     
-    // Water loss table
-    updateWaterLossTable();
+    // // Water loss table
+    // updateWaterLossTable();
     
-    // Poverty affordability table
-    updatePovertyAffordabilityTable();
+    // // Poverty affordability table
+    // updatePovertyAffordabilityTable();
 }
 
 /**
@@ -956,381 +1298,61 @@ function updateBillComparisonTable(tableId, comparisonData) {
 /**
  * Update water loss table
  */
-function updateWaterLossTable() {
-    const tableBody = document.getElementById('waterLossTable');
-    tableBody.innerHTML = '';
+// function updateWaterLossTable() {
+//     const tableBody = document.getElementById('waterLossTable');
+//     tableBody.innerHTML = '';
     
-    const { years, totalProduction, lostWater, revenueLost } = appState.waterLossResults;
+//     const { years, totalProduction, lostWater, revenueLost } = appState.waterLossResults;
     
-    for (let i = 0; i < years.length; i++) {
-        const row = document.createElement('tr');
+//     for (let i = 0; i < years.length; i++) {
+//         const row = document.createElement('tr');
         
-        row.innerHTML = `
-            <td>${years[i]}</td>
-            <td>${formatNumber(totalProduction[i])}</td>
-            <td>${formatNumber(lostWater[i])}</td>
-            <td>${formatCurrency(revenueLost[i])}</td>
-        `;
+//         row.innerHTML = `
+//             <td>${years[i]}</td>
+//             <td>${formatNumber(totalProduction[i])}</td>
+//             <td>${formatNumber(lostWater[i])}</td>
+//             <td>${formatCurrency(revenueLost[i])}</td>
+//         `;
         
-        tableBody.appendChild(row);
-    }
+//         tableBody.appendChild(row);
+//     }
     
-    // If no data, add a message row
-    if (tableBody.children.length === 0) {
-        const row = document.createElement('tr');
-        row.innerHTML = `<td colspan="4" class="text-center">No water loss data available</td>`;
-        tableBody.appendChild(row);
-    }
-}
+//     // If no data, add a message row
+//     if (tableBody.children.length === 0) {
+//         const row = document.createElement('tr');
+//         row.innerHTML = `<td colspan="4" class="text-center">No water loss data available</td>`;
+//         tableBody.appendChild(row);
+//     }
+// }
 
-/**
- * Update poverty affordability table
- */
-function updatePovertyAffordabilityTable() {
-    const tableBody = document.getElementById('povertyAffordabilityTable');
-    tableBody.innerHTML = '';
+// /**
+//  * Update poverty affordability table
+//  */
+// function updatePovertyAffordabilityTable() {
+//     const tableBody = document.getElementById('povertyAffordabilityTable');
+//     tableBody.innerHTML = '';
     
-    const { years, waterBill, percentOfIncome, status } = appState.povertyResults;
+//     const { years, waterBill, percentOfIncome, status } = appState.povertyResults;
     
-    for (let i = 0; i < years.length; i++) {
-        const row = document.createElement('tr');
+//     for (let i = 0; i < years.length; i++) {
+//         const row = document.createElement('tr');
         
-        row.innerHTML = `
-            <td>${years[i]}</td>
-            <td>${formatCurrency(waterBill[i])}</td>
-            <td>${formatPercentage(percentOfIncome[i])}</td>
-            <td><span class="badge ${status[i].class}">${status[i].label}</span></td>
-        `;
+//         row.innerHTML = `
+//             <td>${years[i]}</td>
+//             <td>${formatCurrency(waterBill[i])}</td>
+//             <td>${formatPercentage(percentOfIncome[i])}</td>
+//             <td><span class="badge ${status[i].class}">${status[i].label}</span></td>
+//         `;
         
-        tableBody.appendChild(row);
-    }
+//         tableBody.appendChild(row);
+//     }
     
-    // If no data, add a message row
-    if (tableBody.children.length === 0) {
-        const row = document.createElement('tr');
-        row.innerHTML = `<td colspan="4" class="text-center">No poverty affordability data available</td>`;
-        tableBody.appendChild(row);
-    }
-}
+//     // If no data, add a message row
+//     if (tableBody.children.length === 0) {
+//         const row = document.createElement('tr');
+//         row.innerHTML = `<td colspan="4" class="text-center">No poverty affordability data available</td>`;
+//         tableBody.appendChild(row);
+//     }
+// }
 
-/**
- * Generate detailed calculation explanation for the math modal
- * @returns {string} HTML string with calculation explanation
- */
-function generateCalculationExplanation() {
-    let explanationHTML = '<div class="calculation-explanation">';
-    
-    // Basic calculation methodology
-    explanationHTML += `
-        <h4>Calculation Methodology</h4>
-        <p>This tool uses industry-standard approaches to calculate water rates, revenue needs, and affordability metrics.</p>
-        
-        <h5>Key Formulas</h5>
-        <ul>
-            <li><strong>Monthly Bill</strong> = Base Rate + Add-on Fee + Sum(Tier Usage × Tier Rate)</li>
-            <li><strong>Annual Revenue</strong> = Monthly Bill × Number of Customers × 12 months</li>
-            <li><strong>Annual Revenue Need</strong> = O&M Costs + Debt Service + Capital Reserves</li>
-            <li><strong>Affordability</strong> = Monthly Bill ÷ (Monthly Median Household Income)</li>
-            <li><strong>EPA Affordability Threshold</strong> = 2.5% of Median Household Income</li>
-        </ul>
-        
-        <h4>Current Rate Structure Calculations</h4>
-    `;
-    
-    // Current rate structure
-    explanationHTML += `
-        <h5>Tier Breakdown for Average Usage (${formatNumber(appState.avgMonthlyUsage)} gallons)</h5>
-        <table class="table table-sm">
-            <thead>
-                <tr>
-                    <th>Tier</th>
-                    <th>Gallons Used</th>
-                    <th>Rate ($/1,000 gal)</th>
-                    <th>Cost ($)</th>
-                    <th>Calculation</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
-    
-    appState.currentResults.tierBreakdown.forEach((tier, index) => {
-        if (tier.gallons > 0) {
-            explanationHTML += `
-                <tr>
-                    <td>Tier ${index + 1}</td>
-                    <td>${formatNumber(tier.gallons)}</td>
-                    <td>$${tier.rate.toFixed(2)}</td>
-                    <td>${formatCurrency(tier.cost)}</td>
-                    <td>${formatNumber(tier.gallons)} ÷ 1,000 × $${tier.rate.toFixed(2)} = ${formatCurrency(tier.cost)}</td>
-                </tr>
-            `;
-        }
-    });
-    
-    explanationHTML += `
-            </tbody>
-            <tfoot>
-                <tr>
-                    <th colspan="3">Base Rate</th>
-                    <td>${formatCurrency(appState.currentResults.baseRateCost)}</td>
-                    <td>Fixed charge per account</td>
-                </tr>
-                <tr>
-                    <th colspan="3">Add-on Fee</th>
-                    <td>${formatCurrency(appState.currentResults.addonFeeCost)}</td>
-                    <td>Additional fixed charge per account</td>
-                </tr>
-                <tr>
-                    <th colspan="3">Total Monthly Bill</th>
-                    <td>${formatCurrency(appState.currentResults.totalBill)}</td>
-                    <td>Sum of tier costs + base rate + add-on fee</td>
-                </tr>
-            </tfoot>
-        </table>
-        
-        <h5>Affordability Calculation</h5>
-        <ul>
-            <li>Median Household Income: ${formatCurrency(appState.medianIncome)} per year</li>
-            <li>Monthly Median Household Income: ${formatCurrency(appState.medianIncome / 12)} per month</li>
-            <li>Monthly Water Bill: ${formatCurrency(appState.currentResults.totalBill)}</li>
-            <li>Affordability: ${formatCurrency(appState.currentResults.totalBill)} ÷ ${formatCurrency(appState.medianIncome / 12)} = ${formatPercentage(appState.currentResults.affordabilityMHI)}</li>
-            <li>EPA Threshold: 2.5% of Monthly Median Household Income</li>
-            <li>Status: <span class="badge ${getAffordabilityStatus(appState.currentResults.affordabilityMHI).class}">${getAffordabilityStatus(appState.currentResults.affordabilityMHI).label}</span></li>
-        </ul>
-        
-        <h5>Annual Revenue Calculation</h5>
-        <ul>
-            <li>Monthly Bill per Customer: ${formatCurrency(appState.currentResults.totalBill)}</li>
-            <li>Number of Customers: ${formatNumber(appState.customerCount)}</li>
-            <li>Annual Revenue: ${formatCurrency(appState.currentResults.totalBill)} × ${formatNumber(appState.customerCount)} × 12 = ${formatCurrency(appState.currentResults.annualRevenue)}</li>
-        </ul>
-          <h5>Annual Revenue Need Calculation</h5>
-        <ul>
-            <li>O&M Costs: ${formatCurrency(appState.operatingCost)}</li>
-            <li>Debt Service: ${formatCurrency(appState.totalDebtPayments)}
-                <ul>
-                    <li>Existing Debt: ${formatCurrency(appState.existingDebtPayments)}</li>
-                    ${appState.nearTermProjectDebt > 0 ? 
-                    `<li>Near-Term Project Debt: ${formatCurrency(appState.nearTermProjectDebt)}</li>` : ''}
-                </ul>
-            </li>
-            <li>Capital Reserves: ${formatCurrency(calculateInfrastructureReserve())} (Infrastructure Cost of ${formatCurrency(appState.infrastructureCost)} ÷ Asset Lifespan of ${appState.assetLifespan} years)</li>
-            <li>Current Year Grants: ${formatCurrency(appState.currentResults.currentYearGrants)}</li>
-            <li>Net Annual Revenue Need: ${formatCurrency(appState.operatingCost)} + ${formatCurrency(appState.totalDebtPayments)} + ${formatCurrency(calculateInfrastructureReserve())} - ${formatCurrency(appState.currentResults.currentYearGrants)} = ${formatCurrency(appState.currentResults.annualRevenueNeed)}</li>
-        </ul>
-    `;
-    
-    // Future rate structure
-    explanationHTML += `
-        <h4>Future Rate Structure Calculations</h4>
-        
-        <h5>Tier Breakdown for Average Usage (${formatNumber(appState.avgMonthlyUsage)} gallons)</h5>
-        <table class="table table-sm">
-            <thead>
-                <tr>
-                    <th>Tier</th>
-                    <th>Gallons Used</th>
-                    <th>Rate ($/1,000 gal)</th>
-                    <th>Cost ($)</th>
-                    <th>Calculation</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
-    
-    appState.futureResults.tierBreakdown.forEach((tier, index) => {
-        if (tier.gallons > 0) {
-            explanationHTML += `
-                <tr>
-                    <td>Tier ${index + 1}</td>
-                    <td>${formatNumber(tier.gallons)}</td>
-                    <td>$${tier.rate.toFixed(2)}</td>
-                    <td>${formatCurrency(tier.cost)}</td>
-                    <td>${formatNumber(tier.gallons)} ÷ 1,000 × $${tier.rate.toFixed(2)} = ${formatCurrency(tier.cost)}</td>
-                </tr>
-            `;
-        }
-    });
-    
-    explanationHTML += `
-            </tbody>
-            <tfoot>
-                <tr>
-                    <th colspan="3">Base Rate</th>
-                    <td>${formatCurrency(appState.futureResults.baseRateCost)}</td>
-                    <td>Fixed charge per account</td>
-                </tr>
-                <tr>
-                    <th colspan="3">Add-on Fee</th>
-                    <td>${formatCurrency(appState.futureResults.addonFeeCost)}</td>
-                    <td>Additional fixed charge per account</td>
-                </tr>
-                <tr>
-                    <th colspan="3">Total Monthly Bill</th>
-                    <td>${formatCurrency(appState.futureResults.totalBill)}</td>
-                    <td>Sum of tier costs + base rate + add-on fee</td>
-                </tr>
-            </tfoot>
-        </table>
-        
-        <h5>Affordability Calculation</h5>
-        <ul>
-            <li>Median Household Income: ${formatCurrency(appState.medianIncome)} per year</li>
-            <li>Monthly Median Household Income: ${formatCurrency(appState.medianIncome / 12)} per month</li>
-            <li>Monthly Water Bill: ${formatCurrency(appState.futureResults.totalBill)}</li>
-            <li>Affordability: ${formatCurrency(appState.futureResults.totalBill)} ÷ ${formatCurrency(appState.medianIncome / 12)} = ${formatPercentage(appState.futureResults.affordabilityMHI)}</li>
-            <li>EPA Threshold: 2.5% of Monthly Median Household Income</li>
-            <li>Status: <span class="badge ${getAffordabilityStatus(appState.futureResults.affordabilityMHI).class}">${getAffordabilityStatus(appState.futureResults.affordabilityMHI).label}</span></li>
-        </ul>
-        
-        <h5>Annual Revenue Calculation</h5>
-        <ul>
-            <li>Monthly Bill per Customer: ${formatCurrency(appState.futureResults.totalBill)}</li>
-            <li>Number of Customers: ${formatNumber(appState.customerCount)}</li>
-            <li>Annual Revenue: ${formatCurrency(appState.futureResults.totalBill)} × ${formatNumber(appState.customerCount)} × 12 = ${formatCurrency(appState.futureResults.annualRevenue)}</li>
-        </ul>
-        
-        <h5>Annual Revenue Need Calculation</h5>
-        <ul>            <li>O&M Costs: ${formatCurrency(appState.futureResults.operatingCost)}</li>
-            <li>Existing Debt Service: ${formatCurrency(appState.futureResults.existingDebtPayments)}</li>
-            <li>Near-Term Project Debt Service: ${formatCurrency(appState.futureResults.nearTermProjectDebt)}</li>
-            <li>Capital Reserves: ${formatCurrency(appState.futureResults.infrastructureReserve)}</li>
-            <li>Near-Term Grants (offset): ${formatCurrency(appState.futureResults.nearTermGrants)}</li>
-            <li>Net Annual Revenue Need: ${formatCurrency(appState.futureResults.operatingCost)} + ${formatCurrency(appState.futureResults.existingDebtPayments)} + ${formatCurrency(appState.futureResults.nearTermProjectDebt)} + ${formatCurrency(appState.futureResults.infrastructureReserve)} - ${formatCurrency(appState.futureResults.nearTermGrants)} = ${formatCurrency(appState.futureResults.annualRevenueNeed)}</li>
-        </ul>
-    `;
-    
-    // Long-term projections
-    explanationHTML += `
-        <h4>Long-term Projections Methodology</h4>
-        <p>The long-term projections calculate how revenue needs, revenue, and reserves change over time based on the following factors:</p>
-        
-        <h5>Key Projection Factors</h5>
-        <ul>
-            <li>Inflation Rate: ${appState.inflationRate}% (applied to O&M costs)</li>
-            <li>Customer Growth Rate: ${appState.customerGrowthRate}% (applied to revenue)</li>
-            <li>Interest Rate on Reserves: ${appState.interestRate}% (applied to reserves)</li>
-            <li>Interest Rate Adjustment: ${appState.interestAdjustment}% per year</li>
-            <li>Target Reserve Amount: ${formatCurrency(appState.targetReserve)}</li>
-            <li>Target Year to Achieve: ${appState.targetYear}</li>
-        </ul>
-        
-        <h5>Financial Planning Impacts</h5>
-        <ul>
-            <li><strong>Loans & Projects:</strong> ${appState.projects.filter(p => p.funding === 'loan').length} project(s) funded via loan will increase debt payments in future years</li>
-            <li><strong>Reserve-Funded Projects:</strong> ${appState.projects.filter(p => p.funding === 'reserves').length} project(s) will be funded from reserves</li>
-            <li><strong>Grants:</strong> ${appState.grants.length} grant(s) will offset revenue needs in specified years</li>
-        </ul>
-        
-        <p>For each year in the projection period, the tool:</p>
-        <ol>
-            <li>Increases O&M costs by the inflation rate</li>
-            <li>Calculates debt service based on existing and new loans</li>
-            <li>Determines capital reserve contributions needed to reach target</li>
-            <li>Calculates total revenue need (O&M + debt + capital)</li>
-            <li>Applies grants to offset revenue needs</li>
-            <li>Estimates revenue based on a gradual transition from current to future rates</li>
-            <li>Updates reserve balance with contributions, interest, and project expenses</li>
-        </ol>
-    `;
-    
-    // Water loss impact
-    explanationHTML += `
-        <h4>Water Loss Impact Methodology</h4>
-        <p>Water loss impact calculations estimate the financial impact of non-revenue water:</p>
-        
-        <h5>Water Loss Formula</h5>
-        <ul>
-            <li>Water Loss Percentage: ${appState.waterLossPercent}%</li>
-            <li>Total Production = Billed Usage ÷ (1 - Water Loss Percentage)</li>
-            <li>Lost Water = Total Production - Billed Usage</li>
-            <li>Revenue Lost = Lost Water × Average Rate per 1,000 gallons</li>
-        </ul>
-        
-        <p>For example, in the first year:</p>
-        <ul>
-            <li>Billed Usage: ${formatNumber(appState.avgMonthlyUsage * appState.customerCount * 12)} gallons per year</li>
-            <li>Total Production: ${formatNumber(appState.waterLossResults.totalProduction[0])} gallons</li>
-            <li>Lost Water: ${formatNumber(appState.waterLossResults.lostWater[0])} gallons</li>
-            <li>Revenue Lost: ${formatCurrency(appState.waterLossResults.revenueLost[0])}</li>
-        </ul>
-    `;
-    
-    // Poverty affordability
-    explanationHTML += `
-        <h4>Poverty-Level Affordability Methodology</h4>
-        <p>Poverty-level affordability assesses how water bills impact households at the poverty level:</p>
-        
-        <h5>Key Inputs</h5>
-        <ul>
-            <li>Poverty Level Income: ${formatCurrency(appState.povertyIncome)} per year</li>
-            <li>Monthly Poverty Income: ${formatCurrency(appState.povertyIncome / 12)} per month</li>
-            <li>Households Below Poverty: ${appState.belowPovertyPercent}%</li>
-        </ul>
-        
-        <p>For each year, the tool calculates:</p>
-        <ul>
-            <li>Projected water bill based on the transition from current to future rates</li>
-            <li>Poverty income adjusted for inflation</li>
-            <li>Water bill as a percentage of poverty income</li>
-            <li>Affordability status based on EPA thresholds</li>
-        </ul>
-    `;
-    
-    // Add specific explanation about debt calculation approach
-    explanationHTML += `
-        <h4>Debt Service Calculation</h4>
-        <p>The calculator consolidates debt from multiple sources:</p>
-        
-        <h5>Existing Debt Sources</h5>
-        <ul>
-            <li><strong>Manual Entry:</strong> ${formatCurrency(parseFloat(document.getElementById('debtPayments').value) || 0)}</li>
-            <li><strong>Individual Loan Rows:</strong> ${formatCurrency(appState.loans.reduce((total, loan) => total + calculateAnnualLoanPayment(loan), 0))}</li>
-            <li><strong>Value Used:</strong> ${formatCurrency(appState.existingDebtPayments)} (${parseFloat(document.getElementById('debtPayments').value) > 0 ? 'Manual entry' : 'Calculated from loan rows'})</li>
-        </ul>
-        
-        ${appState.projects.some(p => p.funding === 'loan' && (p.year === 0 || p.year === 1)) ? `
-        <h5>Near-Term Project Debt (Years 0-1)</h5>
-        <ul>
-            ${appState.projects.filter(p => p.funding === 'loan' && (p.year === 0 || p.year === 1))
-                .map(project => {
-                    const loan = {
-                        amount: project.cost,
-                        interest: appState.interestRate || 5,
-                        term: appState.assetLifespan || 20
-                    };
-                    const payment = calculateAnnualLoanPayment(loan);
-                    return `<li>${project.name || 'Unnamed project'}: ${formatCurrency(payment)}/year</li>`;
-                }).join('')}
-            <li><strong>Total Near-Term Project Debt:</strong> ${formatCurrency(appState.nearTermProjectDebt)}</li>
-        </ul>
-        ` : ''}
-        
-        <h5>Debt in Long-Term Projections</h5>
-        <p>For long-term projections, the calculator:</p>
-        <ol>
-            <li>Starts with existing debt service (${formatCurrency(appState.existingDebtPayments)})</li>
-            <li>Adds near-term project debt for years 0-1 (${formatCurrency(appState.nearTermProjectDebt)})</li>
-            <li>For later years, adds additional project debt as each project's year is reached</li>
-        </ol>
-        
-        <p><strong>Total Debt Service Used in Calculations:</strong> ${formatCurrency(appState.totalDebtPayments)}</p>
-    `;
-    
-    explanationHTML += '</div>';
-    
-    return explanationHTML;
-}
 
-/**
- * Calculate the total bill for a given usage level
- * @param {number} usage - Water usage in gallons
- * @param {number} baseRate - Base rate in dollars
- * @param {number} addonFee - Add-on fee in dollars
- * @param {Array} tiers - Array of tier objects with enabled, limit, and rate properties
- * @returns {number} Total bill amount
- */
-function calculateTotalBill(usage, baseRate, addonFee, tiers) {
-    const tierBreakdown = calculateTierBreakdown(usage, tiers);
-    return tierBreakdown.totalCost + baseRate + addonFee;
-}

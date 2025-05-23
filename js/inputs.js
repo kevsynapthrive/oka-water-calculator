@@ -141,6 +141,7 @@ function formatDataForExport() {
     data.push(['Financial Information']);
     data.push(['Current Yearly Cost to Operate Water System ($)', appState.operatingCost]);
     data.push(['Current Annual Debt Payments ($)', appState.debtPayments]);
+    data.push(['Remaining Years on Existing Debt', appState.debtTerm]); // Add this line
     data.push(['Current Estimated Cost to Replace Aging Infrastructure ($)', appState.infrastructureCost]);
     data.push(['Current Interest Rate on Reserves (%)', appState.interestRate]);
     data.push(['Asset Lifespan (Years)', appState.assetLifespan]);
@@ -398,6 +399,9 @@ function importFromCSV(csvData) {
             case 'Current Annual Debt Payments ($)':
                 appState.debtPayments = parseFloat(row[1]) || 0;
                 break;
+            case 'Remaining Years on Existing Debt':
+                appState.debtTerm = parseInt(row[1]) || 20;
+                break;
             case 'Current Estimated Cost to Replace Aging Infrastructure ($)':
                 appState.infrastructureCost = parseFloat(row[1]) || 0;
                 break;
@@ -526,6 +530,7 @@ function resetAppState() {
         
         operatingCost: 0,
         debtPayments: 0,
+        debtTerm: 0,
         infrastructureCost: 0,
         interestRate: 0,
         assetLifespan: 0, 
@@ -628,6 +633,7 @@ function updateUIFromAppState() {
     // Financial Information
     document.getElementById('operatingCost').value = appState.operatingCost;
     document.getElementById('debtPayments').value = appState.debtPayments;
+    document.getElementById('debtTerm').value = appState.debtTerm || 20; // Set debt term
     document.getElementById('infrastructureCost').value = appState.infrastructureCost;
     document.getElementById('interestRateSlider').value = appState.interestRate;
     document.getElementById('interestRateValue').textContent = appState.interestRate;
@@ -742,3 +748,9 @@ function formatPercentage(value) {
 function formatNumber(value) {
     return new Intl.NumberFormat('en-US').format(value);
 }
+
+// Add event listener for the debtTerm input
+document.getElementById('debtTerm').addEventListener('input', function() {
+    appState.debtTerm = parseInt(this.value) || 20; // Default to 20 if invalid
+    calculateAll();
+});

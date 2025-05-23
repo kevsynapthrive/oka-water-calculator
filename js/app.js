@@ -25,6 +25,7 @@ const appState = {
     // Financial information
     operatingCost: 3850000,               // Annual O&M for water utility
     debtPayments: 425000,                 // Existing debt service
+    debtTerm: 20, // Default remaining years for manual debt entry
     infrastructureCost: 14500000,         // Capital improvements needed
     interestRate: 3.5,
     assetLifespan: 40, 
@@ -34,13 +35,14 @@ const appState = {
     interestAdjustment: 0.1,
     targetReserve: 1950000,               // ~6 months of operating expenses
     targetYear: 8,
-      // Loans, projects, grants
+    // Loans, projects, grants
     loans: [
         {
             name: "Water Treatment Plant Upgrade",
             amount: 2500000,
             interest: 3.2,
-            term: 25
+            term: 25,
+            year: 0  // Default to current year (year 0 in projections)
         }
     ],
     projects: [
@@ -66,7 +68,7 @@ const appState = {
         { enabled: true, limit: 4000, rate: 5.20 },   // Very low rate for first tier
         { enabled: true, limit: 10000, rate: 5.80 },  // Minimal increase - no conservation incentive
         { enabled: false, limit: 15000, rate: 6.25 },
-        { enabled: false, limit: 25000, rate: 8.75 }
+        { enabled: false, limit: 9999999, rate: 8.75 }
     ],
     
     // Future rate structure - IMPROVED
@@ -76,7 +78,7 @@ const appState = {
         { enabled: true, limit: 3000, rate: 5.50 },   // Essential use at affordable rate
         { enabled: true, limit: 7000, rate: 7.20 },   // Average use
         { enabled: false, limit: 15000, rate: 11.50 }, // Higher usage - conservation pricing
-        { enabled: false, limit: 25000, rate: 15.75 }  // Luxury use - strong price signal
+        { enabled: false, limit: 9999999, rate: 15.75 }  // Luxury use - strong price signal
     ],
     
     // Calculation results - Current
@@ -125,9 +127,20 @@ const appState = {
         waterBill: [],
         percentOfIncome: [],
         status: []
-    }
+    },
+    recommendationSettings: {
+        epaAffordabilityThreshold: 0.025,
+        targetDsrc: 1.2, // Retained for potential future use or if still used implicitly
+        idealBaseRatePercent: 0.3,
+        idealAddonFeePercent: 0.2,
+        idealVolumetricPercent: 0.5,
+        tierMultipliers: [1.0, 1.5, 2.5, 4.0],
+        tierLimitFactors: [0.5, 1.2, 2.5], // Factors for tier limits based on avg. usage
+        maxAnnualIncreasePercent: 0.12
+    },
+    rateRecommendations: null, 
 };
-
+window.appState = appState; // Expose appState globally for debugging
 /**
  * Initialize the application when the DOM is fully loaded
  */
@@ -224,51 +237,8 @@ document.getElementById('collapseAll').addEventListener('click', function() {
         '<i class="bi bi-arrows-collapse"></i> Collapse Inputs';
 });
 
-    // Export button
-    document.getElementById('exportData').addEventListener('click', exportToCSV);
 
-    // Import button
-    document.getElementById('importData').addEventListener('click', function() {
-        document.getElementById('importCSV').click();
-    });
 
-    document.getElementById('importCSV').addEventListener('change', function(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const csvData = e.target.result;
-            importFromCSV(csvData);
-        };
-        reader.readAsText(file);
-        // Reset file input so same file can be re-imported if needed
-        event.target.value = '';
-    });
-
-    // Show Math button
-document.getElementById('showMath').addEventListener('click', function() {
-    const mathSection = document.getElementById('mathSection');
-    if (mathSection.style.display === 'none') {
-        // Generate math details
-        const mathDetails = document.getElementById('mathDetails');
-        mathDetails.innerHTML = generateMathExplanation();
-        
-        // Show the section
-        mathSection.style.display = 'block';
-        this.innerHTML = '<i class="bi bi-calculator"></i> Hide Math';
-        
-        // Scroll to the math section with smooth animation
-        setTimeout(() => {
-            mathSection.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'start' 
-            });
-        }, 100); // Small delay to ensure the section is rendered
-    } else {
-        mathSection.style.display = 'none';
-        this.innerHTML = '<i class="bi bi-calculator"></i> Show Math';
-    }
-});
 
     // Setup input change listeners
     setupInputChangeListeners();
@@ -332,11 +302,17 @@ function setupInputChangeListeners() {
     });
     
     // Sliders - update displays and appState
-    document.getElementById('belowPovertySlider').addEventListener('input', function() {
-        document.getElementById('belowPovertyValue').textContent = this.value;
-        appState.belowPovertyPercent = parseFloat(this.value);
-        calculateAll();
-    });
+    const belowPovertySlider = document.getElementById('belowPovertySlider');
+    if (belowPovertySlider) {
+        belowPovertySlider.addEventListener('input', function() {
+            const valueElement = document.getElementById('belowPovertyValue');
+            if (valueElement) {
+                valueElement.textContent = this.value;
+            }
+            appState.belowPovertyPercent = parseFloat(this.value);
+            calculateAll();
+        });
+    }
     
     // System information
     document.getElementById('customerCount').addEventListener('input', function() {
@@ -349,11 +325,17 @@ function setupInputChangeListeners() {
         calculateAll();
     });
     
-    document.getElementById('waterLossSlider').addEventListener('input', function() {
-        document.getElementById('waterLossValue').textContent = this.value;
-        appState.waterLossPercent = parseFloat(this.value);
-        calculateAll();
-    });
+    const waterLossSlider = document.getElementById('waterLossSlider');
+    if (waterLossSlider) {
+        waterLossSlider.addEventListener('input', function() {
+            const valueElement = document.getElementById('waterLossValue');
+            if (valueElement) {
+                valueElement.textContent = this.value;
+            }
+            appState.waterLossPercent = parseFloat(this.value);
+            calculateAll();
+        });
+    }
     
     // Usage level checkboxes
     document.querySelectorAll('input[id^="compareUsage"]').forEach(checkbox => {
@@ -374,57 +356,99 @@ function setupInputChangeListeners() {
         calculateAll();
     });
     
+    document.getElementById('debtTerm').addEventListener('input', function() {
+        appState.debtTerm = parseInt(this.value) || 0;
+        console.log('[DEBUG] appState.debtTerm after input parse:', appState.debtTerm);
+        calculateAll();
+    });
+    
     document.getElementById('infrastructureCost').addEventListener('input', function() {
         appState.infrastructureCost = parseFloat(this.value) || 0;
         calculateAll();
     });
     
     // Sliders
-    document.getElementById('interestRateSlider').addEventListener('input', function() {
-        document.getElementById('interestRateValue').textContent = this.value;
-        appState.interestRate = parseFloat(this.value);
-        calculateAll();
-    });
+    const interestRateSlider = document.getElementById('interestRateSlider');
+    if (interestRateSlider) {
+        interestRateSlider.addEventListener('input', function() {
+            const valueElement = document.getElementById('interestRateValue');
+            if (valueElement) {
+                valueElement.textContent = this.value;
+            }
+            appState.interestRate = parseFloat(this.value);
+            calculateAll();
+        });
+    }
     
-    document.getElementById('assetLifespanSlider').addEventListener('input', function() {
-        document.getElementById('assetLifespanValue').textContent = this.value;
-        appState.assetLifespan = parseInt(this.value);
-        calculateAll();
-    });
+    const assetLifespanSlider = document.getElementById('assetLifespanSlider');
+    if (assetLifespanSlider) {
+        assetLifespanSlider.addEventListener('input', function() {
+            const valueElement = document.getElementById('assetLifespanValue');
+            if (valueElement) {
+                valueElement.textContent = this.value;
+            }
+            appState.assetLifespan = parseInt(this.value);
+            calculateAll();
+        });
+    }
     
     document.getElementById('projectionPeriod').addEventListener('input', function() {
         appState.projectionPeriod = parseInt(this.value) || 0;
         calculateAll();
     });
     
-    document.getElementById('inflationRateSlider').addEventListener('input', function() {
-        document.getElementById('inflationRateValue').textContent = this.value;
-        appState.inflationRate = parseFloat(this.value);
-        calculateAll();
-    });
+    const inflationRateSlider = document.getElementById('inflationRateSlider');
+    if (inflationRateSlider) {
+        inflationRateSlider.addEventListener('input', function() {
+            const valueElement = document.getElementById('inflationRateValue');
+            if (valueElement) {
+                valueElement.textContent = this.value;
+            }
+            appState.inflationRate = parseFloat(this.value);
+            calculateAll();
+        });
+    }
     
-    document.getElementById('customerGrowthSlider').addEventListener('input', function() {
-        document.getElementById('customerGrowthValue').textContent = this.value;
-        appState.customerGrowthRate = parseFloat(this.value);
-        calculateAll();
-    });
+    const customerGrowthSlider = document.getElementById('customerGrowthSlider');
+    if (customerGrowthSlider) {
+        customerGrowthSlider.addEventListener('input', function() {
+            const valueElement = document.getElementById('customerGrowthValue');
+            if (valueElement) {
+                valueElement.textContent = this.value;
+            }
+            appState.customerGrowthRate = parseFloat(this.value);
+            calculateAll();
+        });
+    }
     
-    document.getElementById('interestAdjustmentSlider').addEventListener('input', function() {
-        document.getElementById('interestAdjustmentValue').textContent = this.value;
-        appState.interestAdjustment = parseFloat(this.value);
-        calculateAll();
-    });
+    const interestAdjustmentSlider = document.getElementById('interestAdjustmentSlider');
+    if (interestAdjustmentSlider) {
+        interestAdjustmentSlider.addEventListener('input', function() {
+            const valueElement = document.getElementById('interestAdjustmentValue');
+            if (valueElement) {
+                valueElement.textContent = this.value;
+            }
+            appState.interestAdjustment = parseFloat(this.value);
+            calculateAll();
+        });
+    }
     
     document.getElementById('targetReserve').addEventListener('input', function() {
         appState.targetReserve = parseFloat(this.value) || 0;
         calculateAll();
     });
     
-    document.getElementById('targetYearSlider').addEventListener('input', function() {
-        document.getElementById('targetYearValue').textContent = this.value;
-        appState.targetYear = parseInt(this.value);
-        calculateAll();
-    });
+    const targetYearSlider = document.getElementById('targetYearSlider');
+    if (targetYearSlider) {
+        targetYearSlider.addEventListener('input', function() {
+            const valueElement = document.getElementById('targetYearValue');
+            if (valueElement) {
+                valueElement.textContent = this.value;
+            }
+            appState.targetYear = parseInt(this.value);
+            calculateAll();
+        });
+    }
     
     // Current rate structure
     document.getElementById('currentBaseRate').addEventListener('input', function() {
@@ -556,14 +580,24 @@ function setupTierEnableDisableListeners() {
  * Update slider value displays
  */
 function updateSliderDisplays() {
-    document.getElementById('belowPovertyValue').textContent = document.getElementById('belowPovertySlider').value;
-    document.getElementById('waterLossValue').textContent = document.getElementById('waterLossSlider').value;
-    document.getElementById('interestRateValue').textContent = document.getElementById('interestRateSlider').value;
-    document.getElementById('assetLifespanValue').textContent = document.getElementById('assetLifespanSlider').value;
-    document.getElementById('inflationRateValue').textContent = document.getElementById('inflationRateSlider').value;
-    document.getElementById('customerGrowthValue').textContent = document.getElementById('customerGrowthSlider').value;
-    document.getElementById('interestAdjustmentValue').textContent = document.getElementById('interestAdjustmentSlider').value;
-    document.getElementById('targetYearValue').textContent = document.getElementById('targetYearSlider').value;
+    // Helper function to safely update an element's text content
+    const updateElementText = (valueId, sliderId) => {
+        const valueElement = document.getElementById(valueId);
+        const sliderElement = document.getElementById(sliderId);
+        if (valueElement && sliderElement) {
+            valueElement.textContent = sliderElement.value;
+        }
+    };
+    
+    // Update each slider display safely
+    updateElementText('belowPovertyValue', 'belowPovertySlider');
+    updateElementText('waterLossValue', 'waterLossSlider');
+    updateElementText('interestRateValue', 'interestRateSlider');
+    updateElementText('assetLifespanValue', 'assetLifespanSlider');
+    updateElementText('inflationRateValue', 'inflationRateSlider');
+    updateElementText('customerGrowthValue', 'customerGrowthSlider');
+    updateElementText('interestAdjustmentValue', 'interestAdjustmentSlider');
+    updateElementText('targetYearValue', 'targetYearSlider');
 }
 
 /**
@@ -601,7 +635,7 @@ function addLoanEntry(loanData) {
                         <input type="text" class="form-control loan-name" placeholder="Loan name">
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <div class="mb-3">
                         <label class="form-label">Amount ($)</label>
                         <input type="number" class="form-control loan-amount" placeholder="0">
@@ -620,6 +654,12 @@ function addLoanEntry(loanData) {
                     </div>
                 </div>
                 <div class="col-md-2">
+                    <div class="mb-3">
+                        <label class="form-label">Start Year</label>
+                        <input type="number" class="form-control loan-year" placeholder="0">
+                    </div>
+                </div>
+                <div class="col-md-1">
                     <button class="btn btn-danger mt-4 remove-loan">Remove</button>
                 </div>
             </div>
@@ -635,12 +675,12 @@ function addLoanEntry(loanData) {
         loanEntry.querySelector('.loan-amount').value = loanData.amount || 0;
         loanEntry.querySelector('.loan-interest').value = loanData.interest || 0;
         loanEntry.querySelector('.loan-term').value = loanData.term || 0;
+        loanEntry.querySelector('.loan-year').value = loanData.year || 0;
     }
     
     // Update appState with current loan data
     updateLoansData();
 }
-
 /**
  * Add a new project entry to the UI and appState
  * @param {Object} projectData - Optional project data to pre-fill the entry
@@ -768,21 +808,24 @@ function setupRemoveButtonListeners() {
  * Update appState loans data from UI
  */
 function updateLoansData() {
-    appState.loans = [];
-    
+    const loans = [];
     document.querySelectorAll('.loan-entry').forEach(entry => {
         const name = entry.querySelector('.loan-name').value;
         const amount = parseFloat(entry.querySelector('.loan-amount').value) || 0;
         const interest = parseFloat(entry.querySelector('.loan-interest').value) || 0;
-        const term = parseInt(entry.querySelector('.loan-term').value) || 0;
-        
-        appState.loans.push({
-            name: name,
-            amount: amount,
-            interest: interest,
-            term: term
+        const term = parseFloat(entry.querySelector('.loan-term').value) || 0;
+        const year = parseInt(entry.querySelector('.loan-year')?.value) || 0;
+        loans.push({
+            name,
+            amount,
+            interest,
+            term,
+            year,
+            existing: true // Add this property to indicate an existing loan
         });
     });
+    appState.loans = loans;
+    calculateAll(); // Use the correct calculation function
 }
 
 /**
@@ -842,10 +885,19 @@ function calculateAll() {
     // Perform all calculations
     calculateCurrentRateStructure();
     calculateFutureRateStructure();
-    calculateLongTermProjections();
-    calculateWaterLossImpact();
-    calculatePovertyAffordability();
+    // calculateLongTermProjections();
+    // calculateWaterLossImpact();
+    // calculatePovertyAffordability();
+    // Add conditional check for water loss and poverty analysis
+    if (typeof updateWaterLossAndPovertyAnalysis === 'function') {
+        updateWaterLossAndPovertyAnalysis();
+    }
     
+    // Generate intelligent rate recommendations
+    if (typeof initRateRecommendations === 'function') {
+        initRateRecommendations();
+    }
+
     // Update displays
     updateDisplays();
 }
@@ -869,489 +921,6 @@ function updateCharts() {
     updateAllCharts();
 }
 
-/**
- * Show the math explanation modal
- */
-function showMathExplanation() {
-    // Generate explanation HTML based on current state and calculations
-    const explanation = generateMathExplanation();
-    
-    // Update modal content
-    document.getElementById('mathExplanation').innerHTML = explanation;
-    
-    // Show the modal
-    const mathModal = new bootstrap.Modal(document.getElementById('mathModal'));
-    mathModal.show();
-}
-
-/**
- * Generate the math explanation HTML
- */
-function generateMathExplanation() {
-    // This will be implemented in calculations.js
-    return generateCalculationExplanation();
-}
-
-/**
- * Export all data to CSV
- */
-/**
- * Export all data and results to CSV
- */
-function exportToCSV() {
-    // Create array to hold all data rows
-    const csvData = [];
-    
-    // Add header info
-    csvData.push(['Oka\' Institute Water Pricing Calculator Tool - Export']);
-    csvData.push([`Generated on: ${new Date().toLocaleString()}`]);
-    csvData.push([]);
-    
-    // SECTION 1: Community Information
-    csvData.push(['COMMUNITY INFORMATION']);
-    csvData.push(['Community Name', appState.communityName || '']);
-    csvData.push(['Median Household Income', appState.medianIncome || 0]);
-    csvData.push(['Poverty Level Income', appState.povertyIncome || 0]);
-    csvData.push(['% Households Below Poverty', appState.belowPoverty || 0]);
-    csvData.push([]);
-    
-    // SECTION 2: System Information
-    csvData.push(['SYSTEM INFORMATION']);
-    csvData.push(['Number of Customers', appState.customerCount || 0]);
-    csvData.push(['Average Monthly Usage (gallons)', appState.avgMonthlyUsage || 0]);
-    csvData.push(['Water Loss (%)', appState.waterLoss || 0]);
-    csvData.push([]);
-    
-    // SECTION 3: Financial Information
-    csvData.push(['FINANCIAL INFORMATION']);
-    csvData.push(['Annual Operating Cost', appState.operatingCost || 0]);
-    csvData.push(['Manual Debt Payment Entry', appState.manualDebtPayment || 0]);
-    csvData.push(['Infrastructure Replacement Cost', appState.infrastructureCost || 0]);
-    csvData.push(['Interest Rate (%)', appState.interestRate || 0]);
-    csvData.push(['Asset Lifespan (years)', appState.assetLifespan || 0]);
-    csvData.push(['Projection Period (years)', appState.projectionPeriod || 0]);
-    csvData.push(['Inflation Rate (%)', appState.inflationRate || 0]);
-    csvData.push(['Customer Growth Rate (%)', appState.customerGrowth || 0]);
-    csvData.push(['Target Reserve Amount', appState.targetReserve || 0]);
-    csvData.push(['Target Year', appState.targetYear || 0]);
-    csvData.push([]);
-    
-    // SECTION 4: Financial Planning - Loans
-    csvData.push(['LOANS AND DEBT']);
-    if (appState.loans && appState.loans.length > 0) {
-        csvData.push(['Name', 'Principal', 'Interest Rate (%)', 'Term (years)', 'Annual Payment']);
-        appState.loans.forEach(loan => {
-            const payment = calculateLoanPayment(loan);
-            csvData.push([
-                loan.name || 'Unnamed Loan',
-                loan.principal || 0,
-                (loan.rate * 100) || 0, // Convert back to percentage for display
-                loan.term || 0,
-                payment || 0
-            ]);
-        });
-    } else {
-        csvData.push(['No loans entered']);
-    }
-    csvData.push([]);
-    
-    // SECTION 5: Financial Planning - Projects
-    csvData.push(['CAPITAL PROJECTS']);
-    if (appState.projects && appState.projects.length > 0) {
-        csvData.push(['Name', 'Cost', 'Year', 'Funding Source']);
-        appState.projects.forEach(project => {
-            csvData.push([
-                project.name || 'Unnamed Project',
-                project.cost || 0,
-                project.year || 0,
-                project.funding || 'reserves'
-            ]);
-        });
-    } else {
-        csvData.push(['No projects entered']);
-    }
-    csvData.push([]);
-    
-    // SECTION 6: Financial Planning - Grants
-    csvData.push(['GRANTS AND SUBSIDIES']);
-    if (appState.grants && appState.grants.length > 0) {
-        csvData.push(['Name', 'Amount', 'Year']);
-        appState.grants.forEach(grant => {
-            csvData.push([
-                grant.name || 'Unnamed Grant',
-                grant.amount || 0,
-                grant.year || 0
-            ]);
-        });
-    } else {
-        csvData.push(['No grants entered']);
-    }
-    csvData.push([]);
-    
-    // SECTION 7: Current Rate Structure
-    csvData.push(['CURRENT RATE STRUCTURE']);
-    csvData.push(['Base Rate', appState.currentBaseRate || 0]);
-    csvData.push(['Add-on Fee', appState.currentAddonFee || 0]);
-    
-    // Current tiers
-    csvData.push(['Tier', 'Enabled', 'Limit (gallons)', 'Rate ($/1000 gallons)']);
-    appState.currentTiers.forEach((tier, index) => {
-        csvData.push([
-            `Tier ${index + 1}`,
-            tier.enabled ? 'Yes' : 'No',
-            tier.limit || 0,
-            tier.rate || 0
-        ]);
-    });
-    csvData.push([]);
-    
-    // SECTION 8: Future Rate Structure
-    csvData.push(['FUTURE RATE STRUCTURE']);
-    csvData.push(['Base Rate', appState.futureBaseRate || 0]);
-    csvData.push(['Add-on Fee', appState.futureAddonFee || 0]);
-    
-    // Future tiers
-    csvData.push(['Tier', 'Enabled', 'Limit (gallons)', 'Rate ($/1000 gallons)']);
-    appState.futureTiers.forEach((tier, index) => {
-        csvData.push([
-            `Tier ${index + 1}`,
-            tier.enabled ? 'Yes' : 'No',
-            tier.limit || 0,
-            tier.rate || 0
-        ]);
-    });
-    csvData.push([]);
-    
-    // SECTION 9: Current Results
-    csvData.push(['CURRENT RATE STRUCTURE RESULTS']);
-    
-    // Financial planning factors (current)
-    csvData.push(['Financial Planning Factors:']);
-    csvData.push(['Operating Costs', appState.currentResults?.operatingCost || 0]);
-    csvData.push(['Existing Debt Service', appState.existingDebtPayments || 0]);
-    csvData.push(['Near-Term Project Debt', appState.nearTermProjectDebt || 0]);
-    csvData.push(['Total Debt Service', appState.totalDebtPayments || 0]);
-    csvData.push(['Infrastructure Reserve', appState.currentResults?.infrastructureReserve || 0]);
-    csvData.push(['Current/Next Year Grants', appState.currentResults?.yearGrants || 0]);
-    csvData.push(['Net Annual Revenue Need', appState.currentResults?.annualRevenueNeed || 0]);
-    
-    // General results (current)
-    csvData.push(['Average Monthly Bill', appState.currentResults?.totalBill || 0]);
-    csvData.push(['Affordability (% of MHI)', appState.currentResults?.affordabilityMHI || 0]);
-    csvData.push(['Annual Revenue', appState.currentResults?.annualRevenue || 0]);
-    csvData.push(['Revenue Gap', appState.currentResults?.revenueGap || 0]);
-    csvData.push(['Revenue Coverage (%)', appState.currentResults?.revenuePercentage || 0]);
-    csvData.push([]);
-    
-    // SECTION 10: Future Results
-    csvData.push(['FUTURE RATE STRUCTURE RESULTS']);
-    
-    // Financial planning factors (future)
-    csvData.push(['Financial Planning Factors:']);
-    csvData.push(['Operating Costs', appState.futureResults?.operatingCost || 0]);
-    csvData.push(['Existing Debt Service', appState.existingDebtPayments || 0]);
-    csvData.push(['Near-Term Project Debt', appState.nearTermProjectDebt || 0]);
-    csvData.push(['Total Debt Service', appState.totalDebtPayments || 0]);
-    csvData.push(['Infrastructure Reserve', appState.futureResults?.infrastructureReserve || 0]);
-    csvData.push(['Near-Term Grants', appState.futureResults?.yearGrants || 0]);
-    csvData.push(['Net Annual Revenue Need', appState.futureResults?.annualRevenueNeed || 0]);
-    
-    // General results (future)
-    csvData.push(['Average Monthly Bill', appState.futureResults?.totalBill || 0]);
-    csvData.push(['Affordability (% of MHI)', appState.futureResults?.affordabilityMHI || 0]);
-    csvData.push(['Annual Revenue', appState.futureResults?.annualRevenue || 0]);
-    csvData.push(['Revenue Gap', appState.futureResults?.revenueGap || 0]);
-    csvData.push(['Revenue Coverage (%)', appState.futureResults?.revenuePercentage || 0]);
-    csvData.push([]);
-    
-    // Convert to CSV string
-    let csvContent = csvData.map(row => row.join(',')).join('\n');
-    
-    // Create download link
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `${appState.communityName || 'water-pricing'}-${new Date().toISOString().slice(0,10)}.csv`);
-    document.body.appendChild(link);
-    
-    // Trigger download and clean up
-    link.click();
-    document.body.removeChild(link);
-}
-
-/**
- * Import data from CSV and update application state
- * @param {string} csvData - The CSV data as a string
- */
-function importFromCSV(csvData) {
-    try {
-        // Split the CSV into rows
-        const rows = csvData.split('\n').map(r => r.replace(/\r$/, '')); // Remove CR if present
-
-        // Check if this is a valid export from our tool - more flexible check
-        if (rows.length < 2 || 
-            (!rows[0].toLowerCase().includes("water pricing") && 
-             !rows[0].toLowerCase().includes("oka"))) {
-            throw new Error('Invalid file format');
-        }
-
-        console.log("Parsing CSV with", rows.length, "rows");
-        
-        const data = {};
-
-        // Parse data by looking for specific headers
-        let currentSection = '';
-
-        // Track tiers and financial entries
-        const currentTiers = [];
-        const futureTiers = [];
-        const loans = [];
-        const projects = [];
-        const grants = [];
-
-        let inTierSection = false;
-        let tierSectionType = '';
-        let inLoanSection = false;
-        let inProjectSection = false;
-        let inGrantSection = false;
-
-        for (let i = 0; i < rows.length; i++) {
-            // Skip empty rows
-            if (!rows[i].trim()) continue;
-
-            const row = rows[i].split(',').map(cell => cell.trim());
-            
-            // Skip rows that are too short
-            if (row.length === 0) continue;
-
-            // Debug output during import
-            console.log(`Row ${i}: ${row[0]} (${row.length} columns)`);
-
-            // Section header (single value in first column)
-            if (row.length >= 1 && row[0] && (!row[1] || row[1] === '')) {
-                currentSection = row[0];
-                console.log(`Found section: ${currentSection}`);
-                inTierSection = false;
-                inLoanSection = false;
-                inProjectSection = false;
-                inGrantSection = false;
-                continue;
-            }
-
-            // Skip tool name and date rows
-            if (row[0].includes('Oka') || row[0].includes('Generated')) continue;
-
-            // Tier header row
-            if (row.length >= 4 && row[0] === 'Tier' && row[1] === 'Enabled' && row[2].includes('Limit')) {
-                inTierSection = true;
-                tierSectionType = currentSection;
-                console.log(`Found tier section: ${tierSectionType}`);
-                continue;
-            }
-
-            // Loan, Project, Grant header rows
-            if (currentSection === 'LOANS AND DEBT' && row[0] === 'Name' && row[1] === 'Principal') {
-                inLoanSection = true;
-                console.log("Found loan section");
-                continue;
-            }
-            if (currentSection === 'CAPITAL PROJECTS' && row[0] === 'Name' && row[1] === 'Cost') {
-                inProjectSection = true;
-                console.log("Found project section");
-                continue;
-            }
-            if (currentSection === 'GRANTS AND SUBSIDIES' && row[0] === 'Name' && row[1] === 'Amount') {
-                inGrantSection = true;
-                console.log("Found grant section");
-                continue;
-            }
-
-            // Process tier data
-            if (inTierSection && row[0].startsWith('Tier ')) {
-                const tierObj = {
-                    enabled: row[1]?.toLowerCase() === 'yes',
-                    limit: parseFloat(row[2]) || 0,
-                    rate: parseFloat(row[3]) || 0
-                };
-                if (tierSectionType === 'CURRENT RATE STRUCTURE') {
-                    currentTiers.push(tierObj);
-                    console.log(`Added current tier: ${row[0]}`);
-                } else if (tierSectionType === 'FUTURE RATE STRUCTURE') {
-                    futureTiers.push(tierObj);
-                    console.log(`Added future tier: ${row[0]}`);
-                }
-                continue;
-            }
-
-            // Process loans
-            if (inLoanSection && row.length >= 4 && row[0] && row[0] !== 'No loans entered') {
-                // Export uses: name, principal, rate, term, payment
-                const loan = {
-                    name: row[0],
-                    // Map from export field names to app state field names
-                    principal: parseFloat(row[1]) || 0,
-                    rate: parseFloat(row[2]) / 100 || 0, // Convert from percentage to decimal
-                    term: parseInt(row[3]) || 0
-                };
-                loans.push(loan);
-                console.log(`Added loan: ${loan.name}`);
-                continue;
-            }
-
-            // Process projects
-            if (inProjectSection && row.length >= 4 && row[0] && row[0] !== 'No projects entered') {
-                const project = {
-                    name: row[0],
-                    cost: parseFloat(row[1]) || 0,
-                    year: parseInt(row[2]) || 0,
-                    funding: row[3] || 'reserves'
-                };
-                projects.push(project);
-                console.log(`Added project: ${project.name}`);
-                continue;
-            }
-
-            // Process grants
-            if (inGrantSection && row.length >= 3 && row[0] && row[0] !== 'No grants entered') {
-                const grant = {
-                    name: row[0],
-                    amount: parseFloat(row[1]) || 0,
-                    year: parseInt(row[2]) || 0
-                };
-                grants.push(grant);
-                console.log(`Added grant: ${grant.name}`);
-                continue;
-            }
-
-            // Process normal key-value pairs
-            if (row.length >= 2) {
-                const key = row[0];
-                const value = row[1];
-
-                // Community information
-                if (key === 'Community Name') {
-                    data.communityName = value;
-                    console.log(`Set community name: ${value}`);
-                }
-                if (key === 'Median Household Income') data.medianIncome = parseFloat(value) || 0;
-                if (key === 'Poverty Level Income') data.povertyIncome = parseFloat(value) || 0;
-                // Match export field name
-                if (key === '% Households Below Poverty') data.belowPoverty = parseFloat(value) || 0;
-
-                // System information
-                if (key === 'Number of Customers') data.customerCount = parseInt(value) || 0;
-                if (key === 'Average Monthly Usage (gallons)') data.avgMonthlyUsage = parseFloat(value) || 0;
-                // Match export field name
-                if (key === 'Water Loss (%)') data.waterLoss = parseFloat(value) || 0;
-
-                // Financial information
-                if (key === 'Annual Operating Cost') data.operatingCost = parseFloat(value) || 0;
-                // Match export field name
-                if (key === 'Manual Debt Payment Entry') data.manualDebtPayment = parseFloat(value) || 0;
-                if (key === 'Infrastructure Replacement Cost') data.infrastructureCost = parseFloat(value) || 0;
-                if (key === 'Interest Rate (%)') data.interestRate = parseFloat(value) || 0;
-                if (key === 'Asset Lifespan (years)') data.assetLifespan = parseInt(value) || 0;
-                if (key === 'Projection Period (years)') data.projectionPeriod = parseInt(value) || 0;
-                if (key === 'Inflation Rate (%)') data.inflationRate = parseFloat(value) || 0;
-                // Match export field name
-                if (key === 'Customer Growth Rate (%)') data.customerGrowth = parseFloat(value) || 0;
-                if (key === 'Target Reserve Amount') data.targetReserve = parseFloat(value) || 0;
-                if (key === 'Target Year') data.targetYear = parseInt(value) || 0;
-
-                // Rate structure
-                if (key === 'Base Rate') {
-                    if (currentSection === 'CURRENT RATE STRUCTURE') {
-                        data.currentBaseRate = parseFloat(value) || 0;
-                    } else if (currentSection === 'FUTURE RATE STRUCTURE') {
-                        data.futureBaseRate = parseFloat(value) || 0;
-                    }
-                }
-                if (key === 'Add-on Fee') {
-                    if (currentSection === 'CURRENT RATE STRUCTURE') {
-                        data.currentAddonFee = parseFloat(value) || 0;
-                    } else if (currentSection === 'FUTURE RATE STRUCTURE') {
-                        data.futureAddonFee = parseFloat(value) || 0;
-                    }
-                }
-            }
-        }
-
-        console.log("Parsed data:", data);
-        console.log("Current tiers:", currentTiers);
-        console.log("Future tiers:", futureTiers);
-        console.log("Loans:", loans);
-        console.log("Projects:", projects);
-        console.log("Grants:", grants);
-
-        // Update appState with parsed data, mapping exported field names to app state field names
-        if (data.communityName) appState.communityName = data.communityName;
-        if (data.medianIncome) appState.medianIncome = data.medianIncome;
-        if (data.povertyIncome) appState.povertyIncome = data.povertyIncome;
-        
-        // Map belowPoverty to belowPovertyPercent
-        if (data.belowPoverty !== undefined) appState.belowPovertyPercent = data.belowPoverty;
-        
-        if (data.customerCount) appState.customerCount = data.customerCount;
-        if (data.avgMonthlyUsage) appState.avgMonthlyUsage = data.avgMonthlyUsage;
-        
-        // Map waterLoss to waterLossPercent
-        if (data.waterLoss !== undefined) appState.waterLossPercent = data.waterLoss;
-        
-        if (data.operatingCost) appState.operatingCost = data.operatingCost;
-        
-        // Map manualDebtPayment to debtPayments
-        if (data.manualDebtPayment !== undefined) appState.debtPayments = data.manualDebtPayment;
-        
-        if (data.infrastructureCost) appState.infrastructureCost = data.infrastructureCost;
-        if (data.interestRate !== undefined) appState.interestRate = data.interestRate;
-        if (data.assetLifespan) appState.assetLifespan = data.assetLifespan;
-        if (data.projectionPeriod) appState.projectionPeriod = data.projectionPeriod;
-        if (data.inflationRate !== undefined) appState.inflationRate = data.inflationRate;
-        
-        // Map customerGrowth to customerGrowthRate
-        if (data.customerGrowth !== undefined) appState.customerGrowthRate = data.customerGrowth;
-        
-        if (data.targetReserve) appState.targetReserve = data.targetReserve;
-        if (data.targetYear) appState.targetYear = data.targetYear;
-
-        // Rate structures
-        if (data.currentBaseRate !== undefined) appState.currentBaseRate = data.currentBaseRate;
-        if (data.currentAddonFee !== undefined) appState.currentAddonFee = data.currentAddonFee;
-        if (data.futureBaseRate !== undefined) appState.futureBaseRate = data.futureBaseRate;
-        if (data.futureAddonFee !== undefined) appState.futureAddonFee = data.futureAddonFee;
-
-        // Update tiers if we found them
-        if (currentTiers.length > 0) appState.currentTiers = currentTiers;
-        if (futureTiers.length > 0) appState.futureTiers = futureTiers;
-
-        // Update financial planning entries - convert field names as needed
-        if (loans.length > 0) {
-            // Map principal → amount, rate → interest for each loan
-            appState.loans = loans.map(loan => ({
-                name: loan.name,
-                amount: loan.principal,   // Rename principal to amount
-                interest: loan.rate,      // Rename rate to interest
-                term: loan.term
-            }));
-        }
-        
-        if (projects.length > 0) appState.projects = projects;
-        if (grants.length > 0) appState.grants = grants;
-
-        // Update UI from imported state
-        updateInputsFromState();
-
-        // Run calculations with new data
-        calculateAll();
-
-        // Show success message
-        alert('Data imported successfully!');
-    } catch (error) {
-        console.error('Error importing CSV data:', error);
-        alert('Invalid file format. Please select a CSV file exported from this tool.');
-    }
-}
 
 /**
  * Set input fields to match appState values
@@ -1611,16 +1180,7 @@ function validateRequiredFields() {
     return valid;
 }
 
-// Hook validation to export button
-const exportBtn = document.getElementById('exportData');
-if (exportBtn) {
-    exportBtn.addEventListener('click', function(e) {
-        if (!validateRequiredFields()) {
-            e.preventDefault();
-            alert('Please fill in all required fields before exporting.');
-        }
-    }, true);
-}
+
 document.addEventListener('DOMContentLoaded', function() {
     const backToTopButton = document.getElementById('backToTop');
     
