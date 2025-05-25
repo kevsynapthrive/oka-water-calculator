@@ -1,7 +1,5 @@
 # 💧 Oka' Institute Water Pricing Calculator Tool
 
-![Oka' Institute Water Pricing Calculator](OkaLogo.png)
-
 A browser-based tool designed to help rural and tribal water utilities in Oklahoma plan sustainable, long-term water rates that balance **full-cost recovery** with **affordability**.
 
 ## 🎯 Project Goals
