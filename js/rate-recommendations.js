@@ -1,7 +1,7 @@
 /**
  * Oka' Institute Water Pricing Calculator Tool
  * Rate Recommendations JavaScript File
- *
+ * For FINANCIAL ADVISOR SECTION
  * This file provides intelligent rate structure recommendations including:
  * - Optimal future rate structure generation
  * - Year-by-year transition planning (dynamically adjusted for solvency)
@@ -626,42 +626,275 @@ function renderRateRecommendations() {
 }
 
 function updateOptimalRateCard() {
-    if (!appState.rateRecommendations || !appState.rateRecommendations.optimalRates) return;
-    const optimalRates = appState.rateRecommendations.optimalRates; // This now uses appState.currentAddonFee
-
-    document.getElementById('recommendedBaseRate').textContent = '$' + roundToCurrency(optimalRates.baseRate).toFixed(2);
-    document.getElementById('recommendedAddonFee').textContent = '$' + roundToCurrency(appState.currentAddonFee).toFixed(2); // Display static addon fee
-
-    const tierRows = document.getElementById('recommendedTierRows');
-    tierRows.innerHTML = ''; 
-
-    optimalRates.tiers.forEach((tier, index) => {
-        if (!tier || !tier.enabled) return;
-        const row = tierRows.insertRow();
-        row.insertCell().textContent = `Tier ${index + 1}`;
-        row.insertCell().textContent = tier.limit === null ? 'Unlimited' : `${Math.round(tier.limit).toLocaleString()} gallons`;
-        row.insertCell().textContent = `$${roundToCurrency(tier.rate).toFixed(2)} per 1,000 gallons`;
-    });
-
-    // For average bill calculation, ensure the static addon fee is used from optimalRates object
-    const tempOptimalForBillCalc = {...optimalRates, addonFee: appState.currentAddonFee };
-    const avgBill = calculateMonthlyBill(tempOptimalForBillCalc, appState.avgMonthlyUsage);
-    document.getElementById('recommendedAvgBill').textContent = '$' + roundToCurrency(avgBill).toFixed(2);
-
-    const affordabilityMHI = calculateAffordabilityMHI(tempOptimalForBillCalc, appState.avgMonthlyUsage, appState.medianIncome);
-    document.getElementById('recommendedAffordabilityMHI').textContent = (affordabilityMHI * 100).toFixed(2) + '%';
+    if (!appState.rateRecommendations || !appState.rateRecommendations.optimalRates || 
+        !appState.rateRecommendations.financialProjection || 
+        appState.rateRecommendations.financialProjection.length < 3) return;
     
-    const affordabilityIndicator = document.getElementById('recommendedAffordabilityIndicator');
-    const threshold = appState.recommendationSettings.EPA_AFFORDABILITY_THRESHOLD;
-    if (affordabilityMHI <= threshold * 0.75) { 
-        affordabilityIndicator.className = 'badge bg-success ms-2'; affordabilityIndicator.textContent = 'Affordable';
-    } else if (affordabilityMHI <= threshold) { 
-        affordabilityIndicator.className = 'badge bg-info text-dark ms-2'; affordabilityIndicator.textContent = 'Meets Target';
-    } else if (affordabilityMHI <= threshold * 1.5) { 
-        affordabilityIndicator.className = 'badge bg-warning text-dark ms-2'; affordabilityIndicator.textContent = 'Moderate Burden';
-    } else { 
-        affordabilityIndicator.className = 'badge bg-danger ms-2'; affordabilityIndicator.textContent = 'High Burden';
+    const optimalRates = appState.rateRecommendations.optimalRates;
+    const projection = appState.rateRecommendations.financialProjection;
+    
+    // Get Year 1 rates (immediate action)
+    const year1 = projection[1]; // Index 1 is Year 1
+    // Get Year 2-3 rates
+    const year3 = projection[3]; // Index 3 is Year 3
+    
+    // Update title
+    const titleElement = document.querySelector('#recommendationsCard .card-header');
+    if (titleElement) {
+        titleElement.innerHTML = '<i class="bi bi-award"></i> Recommended Rate Implementation Plan';
     }
+    
+    // Create the HTML for the card content
+    const cardBody = document.getElementById('recommendationsCardBody');
+    if (!cardBody) return;
+    
+    // Calculate immediate impact on average bill
+    const year1Structure = {
+        baseRate: year1.baseRate,
+        addonFee: year1.addonFee,
+        tiers: [
+            { enabled: true, limit: year1.tier1Limit, rate: year1.tier1Rate },
+            { enabled: year1.tier2Rate > 0, limit: year1.tier2Limit, rate: year1.tier2Rate },
+            { enabled: year1.tier3Rate > 0, limit: year1.tier3Limit, rate: year1.tier3Rate },
+            { enabled: year1.tier4Rate > 0, limit: null, rate: year1.tier4Rate }
+        ]
+    };
+    const avgBill = calculateMonthlyBill(year1Structure, appState.avgMonthlyUsage);
+    const affordabilityMHI = calculateAffordabilityMHI(year1Structure, appState.avgMonthlyUsage, appState.medianIncome);
+    
+    // Calculate percent changes
+    const baseRateChange = ((year1.baseRate - appState.currentBaseRate) / appState.currentBaseRate * 100).toFixed(1);
+    const tier1RateChange = ((year1.tier1Rate - appState.currentTiers[0].rate) / appState.currentTiers[0].rate * 100).toFixed(1);
+    
+    cardBody.innerHTML = `
+        <div class="row">
+            <div class="col-md-12 mb-4">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                    Sustainable water systems require ongoing rate adjustments to address changing costs, 
+                    planned projects, and infrastructure needs. This plan prioritizes financial stability 
+                    while maintaining affordability.
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card border-primary h-100">
+                    <div class="card-header bg-primary text-white">
+                        <strong>IMMEDIATE ACTION (YEAR 1)</strong>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="mb-3">Recommended Changes:</h5>
+                        <ul class="list-group mb-3">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Base Rate
+                                <span>$${year1.baseRate.toFixed(2)} <small class="ms-1 text-${baseRateChange > 0 ? 'danger' : 'success'}">(${baseRateChange > 0 ? '+' : ''}${baseRateChange}%)</small></span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Add-on Fee
+                                <span>$${year1.addonFee.toFixed(2)} <small class="ms-1 text-muted">(no change)</small></span>
+                            </li>
+                            
+                            <!-- Tier 1 -->
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>Tier 1 Rate</span>
+                                    <span>$${year1.tier1Rate.toFixed(2)} <small class="ms-1 text-${tier1RateChange > 0 ? 'danger' : 'success'}">(${tier1RateChange > 0 ? '+' : ''}${tier1RateChange}%)</small></span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                    <small class="text-muted">Limit</small>
+                                    <small>${year1.tier1Limit.toLocaleString()} gal <small class="ms-1 text-${
+                                        ((year1.tier1Limit - (appState.currentTiers[0]?.limit || 0)) / (appState.currentTiers[0]?.limit || 1) * 100) > 0 ? 'danger' : 'success'
+                                    }">(${((year1.tier1Limit - (appState.currentTiers[0]?.limit || 0)) / (appState.currentTiers[0]?.limit || 1) * 100).toFixed(1)}%)</small></small>
+                                </div>
+                            </li>
+                            
+                            <!-- Tier 2 -->
+                            ${year1.tier2Rate ? `
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>Tier 2 Rate</span>
+                                    <span>$${year1.tier2Rate.toFixed(2)} <small class="ms-1 text-${
+                                        ((year1.tier2Rate - (appState.currentTiers[1]?.rate || 0)) / (appState.currentTiers[1]?.rate || 1) * 100) > 0 ? 'danger' : 'success'
+                                    }">(${((year1.tier2Rate - (appState.currentTiers[1]?.rate || 0)) / (appState.currentTiers[1]?.rate || 1) * 100).toFixed(1)}%)</small></span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                    <small class="text-muted">Limit</small>
+                                    <small>${year1.tier2Limit.toLocaleString()} gal <small class="ms-1 text-${
+                                        ((year1.tier2Limit - (appState.currentTiers[1]?.limit || 0)) / (appState.currentTiers[1]?.limit || 1) * 100) > 0 ? 'danger' : 'success'
+                                    }">(${((year1.tier2Limit - (appState.currentTiers[1]?.limit || 0)) / (appState.currentTiers[1]?.limit || 1) * 100).toFixed(1)}%)</small></small>
+                                </div>
+                            </li>` : ''}
+                            
+                            <!-- Tier 3 -->
+                            ${year1.tier3Rate ? `
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>Tier 3 Rate</span>
+                                    <span>$${year1.tier3Rate.toFixed(2)} <small class="ms-1 text-${
+                                        ((year1.tier3Rate - (appState.currentTiers[2]?.rate || 0)) / (appState.currentTiers[2]?.rate || 1) * 100) > 0 ? 'danger' : 'success'
+                                    }">(${((year1.tier3Rate - (appState.currentTiers[2]?.rate || 0)) / (appState.currentTiers[2]?.rate || 1) * 100).toFixed(1)}%)</small></span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                    <small class="text-muted">Limit</small>
+                                    <small>${year1.tier3Limit.toLocaleString()} gal <small class="ms-1 text-${
+                                        ((year1.tier3Limit - (appState.currentTiers[2]?.limit || 0)) / (appState.currentTiers[2]?.limit || 1) * 100) > 0 ? 'danger' : 'success'
+                                    }">(${((year1.tier3Limit - (appState.currentTiers[2]?.limit || 0)) / (appState.currentTiers[2]?.limit || 1) * 100).toFixed(1)}%)</small></small>
+                                </div>
+                            </li>` : ''}
+                            
+                            <!-- Tier 4 -->
+                            ${year1.tier4Rate ? `
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>Tier 4 Rate</span>
+                                    <span>$${year1.tier4Rate.toFixed(2)} <small class="ms-1 text-${
+                                        ((year1.tier4Rate - (appState.currentTiers[3]?.rate || 0)) / (appState.currentTiers[3]?.rate || 1) * 100) > 0 ? 'danger' : 'success'
+                                    }">(${((year1.tier4Rate - (appState.currentTiers[3]?.rate || 0)) / (appState.currentTiers[3]?.rate || 1) * 100).toFixed(1)}%)</small></span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                    <small class="text-muted">Limit</small>
+                                    <small>Unlimited</small>
+                                </div>
+                            </li>` : ''}
+                        </ul>
+                        <div class="d-grid">
+                            <button hidden id="copyFromAdvisor" class="btn btn-primary">Apply to What-If Scenario</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card border-secondary h-100">
+                    <div class="card-header bg-secondary text-white">
+                        <strong>LOOKING AHEAD (YEARS 2-3)</strong>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="mb-3">Expected Adjustments:</h5>
+                        <ul class="list-group">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Base Rate by Year 3
+                                <span>$${year3.baseRate.toFixed(2)}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Add-on Fee
+                                <span>$${year3.addonFee.toFixed(2)}</span>
+                            </li>
+                            
+                            <!-- Tier 1 -->
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>Tier 1 Rate by Year 3</span>
+                                    <span>$${year3.tier1Rate.toFixed(2)}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                    <small class="text-muted">Limit by Year 3</small>
+                                    <small>${year3.tier1Limit.toLocaleString()} gallons</small>
+                                </div>
+                            </li>
+                            
+                            <!-- Tier 2 -->
+                            ${year3.tier2Rate ? `
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>Tier 2 Rate by Year 3</span>
+                                    <span>$${year3.tier2Rate.toFixed(2)}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                    <small class="text-muted">Limit by Year 3</small>
+                                    <small>${year3.tier2Limit.toLocaleString()} gallons</small>
+                                </div>
+                            </li>` : ''}
+                            
+                            <!-- Tier 3 -->
+                            ${year3.tier3Rate ? `
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>Tier 3 Rate by Year 3</span>
+                                    <span>$${year3.tier3Rate.toFixed(2)}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                    <small class="text-muted">Limit by Year 3</small>
+                                    <small>${year3.tier3Limit.toLocaleString()} gallons</small>
+                                </div>
+                            </li>` : ''}
+                            
+                            <!-- Tier 4 -->
+                            ${year3.tier4Rate ? `
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>Tier 4 Rate by Year 3</span>
+                                    <span>$${year3.tier4Rate.toFixed(2)}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                    <small class="text-muted">Limit</small>
+                                    <small>Unlimited</small>
+                                </div>
+                            </li>` : ''}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card border-info h-100">
+                    <div class="card-header bg-info text-white">
+                        <strong>FINANCIAL IMPACT</strong>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="mb-3">Year 1 Implementation:</h5>
+                        <ul class="list-group mb-3">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Average Monthly Bill
+                                <span>$${avgBill.toFixed(2)}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Bill as % of MHI
+                                <span>${(affordabilityMHI * 100).toFixed(2)}% 
+                                <span id="recommendedAffordabilityIndicator" class="badge ${getAffordabilityBadgeClass(affordabilityMHI)} ms-2">
+                                    ${getAffordabilityLabel(affordabilityMHI)}
+                                </span>
+                                </span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Annual Revenue Generated
+                                <span>${formatCurrency(year1.expectedRevenue)}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Revenue vs. Need
+                                <span class="text-${year1.revenueGap >= 0 ? 'success' : 'danger'}">
+                                    ${year1.revenueGap >= 0 ? 'Sufficient' : 'Deficit'} 
+                                    (${formatCurrency(Math.abs(year1.revenueGap))})
+                                </span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Re-attach the event listener for the copy button
+    setupCopyFromAdvisorButton();
+}
+
+// Helper functions for the badge styling and text
+function getAffordabilityBadgeClass(affordabilityMHI) {
+    const threshold = appState.recommendationSettings.EPA_AFFORDABILITY_THRESHOLD;
+    if (affordabilityMHI <= threshold * 0.75) return 'bg-success';
+    if (affordabilityMHI <= threshold) return 'bg-info text-dark';
+    if (affordabilityMHI <= threshold * 1.5) return 'bg-warning text-dark';
+    return 'bg-danger';
+}
+
+function getAffordabilityLabel(affordabilityMHI) {
+    const threshold = appState.recommendationSettings.EPA_AFFORDABILITY_THRESHOLD;
+    if (affordabilityMHI <= threshold * 0.75) return 'Affordable';
+    if (affordabilityMHI <= threshold) return 'Meets Target';
+    if (affordabilityMHI <= threshold * 1.5) return 'Moderate Burden';
+    return 'High Burden';
 }
 
 function renderFinancialProjectionTable() {
@@ -674,11 +907,19 @@ function renderFinancialProjectionTable() {
         const row = tableBody.insertRow();
         row.insertCell().textContent = yearData.year;
         row.insertCell().textContent = '$' + roundToCurrency(yearData.baseRate).toFixed(2);
-        row.insertCell().textContent = '$' + roundToCurrency(yearData.addonFee).toFixed(2); // Will be static appState.currentAddonFee
+        row.insertCell().textContent = '$' + roundToCurrency(yearData.addonFee).toFixed(2);
         row.insertCell().textContent = '$' + roundToCurrency(yearData.tier1Rate).toFixed(2);
         row.insertCell().textContent = yearData.tier1Limit === null ? 'N/A' : (yearData.tier1Limit?.toLocaleString() || '-');
         row.insertCell().textContent = yearData.tier2Rate !== null ? '$' + roundToCurrency(yearData.tier2Rate).toFixed(2) : '-';
         row.insertCell().textContent = yearData.tier2Limit === null ? 'N/A' : (yearData.tier2Limit?.toLocaleString() || '-');
+        
+        // Add Tier 3 Rate and Limit columns
+        row.insertCell().textContent = yearData.tier3Rate !== null ? '$' + roundToCurrency(yearData.tier3Rate).toFixed(2) : '-';
+        row.insertCell().textContent = yearData.tier3Limit === null ? 'N/A' : (yearData.tier3Limit?.toLocaleString() || '-');
+        
+        // Add Tier 4 Rate column (Tier 4 doesn't have a limit as it's unlimited)
+        row.insertCell().textContent = yearData.tier4Rate !== null ? '$' + roundToCurrency(yearData.tier4Rate).toFixed(2) : '-';
+        // Removed the cell for Tier 4 Limit since it's always unlimited
         
         row.insertCell().textContent = yearData.capitalImprovements > 0 ? '$' + Math.round(yearData.capitalImprovements).toLocaleString() : '-';
         row.insertCell().textContent = yearData.grants > 0 ? '$' + Math.round(yearData.grants).toLocaleString() : '-';
@@ -703,9 +944,7 @@ function renderFinancialProjectionTable() {
             </a>`;
     });
     initializeTooltips();
-}
-
-function initializeTooltips() {
+}function initializeTooltips() {
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipTriggerList.forEach(function (tooltipTriggerEl) {
         const existingTooltip = bootstrap.Tooltip.getInstance(tooltipTriggerEl);
@@ -713,12 +952,6 @@ function initializeTooltips() {
         new bootstrap.Tooltip(tooltipTriggerEl);
     });
 }
-
-function formatCurrency(value) { 
-    if (typeof value !== 'number' || isNaN(value)) return '$0';
-    return '$' + value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-}
-
 
 function renderFinancialProjectionsChart() {
     if (!appState.rateRecommendations || !appState.rateRecommendations.financialProjection) return;
@@ -1049,7 +1282,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setupCopyFromAdvisorButton();
 });
 
-// Add this to your rate-recommendations.js
+
 function setupCopyFromAdvisorButton() {
     const copyButton = document.getElementById('copyFromAdvisor');
     if (!copyButton) return;
@@ -1064,28 +1297,57 @@ function setupCopyFromAdvisorButton() {
     copyButton.addEventListener('click', function() {
         if (!appState.rateRecommendations || !appState.rateRecommendations.optimalRates) return;
         
-        // Copy recommended rates to future (manual) rate inputs
-        const optimal = appState.rateRecommendations.optimalRates;
-        document.getElementById('futureBaseRate').value = optimal.baseRate;
-        document.getElementById('futureAddonFee').value = optimal.addonFee;
+        // Temporarily disable calculations and UI updates
+        const isCalculating = window._isCalculating;
+        window._isCalculating = true;
         
-        // Copy tier rates and limits
-        optimal.tiers.forEach((tier, index) => {
-            if (index < appState.futureTiers.length) {
-                const tierRateId = `futureTierRate${index + 1}`;
-                const tierLimitId = `futureTierLimit${index + 1}`;
-                
-                if (document.getElementById(tierRateId)) {
-                    document.getElementById(tierRateId).value = tier.rate;
+        try {
+            // Create a new object with all the updates we want to make
+            const optimal = appState.rateRecommendations.optimalRates;
+            const newFutureTiers = JSON.parse(JSON.stringify(appState.futureTiers));
+            
+            // Prepare all tier updates in memory
+            optimal.tiers.forEach((tier, index) => {
+                if (index < newFutureTiers.length) {
+                    newFutureTiers[index].enabled = tier.enabled;
+                    newFutureTiers[index].rate = tier.rate;
+                    
+                    if (tier.limit !== null) {
+                        newFutureTiers[index].limit = tier.limit;
+                    }
                 }
+            });
+            
+            // Batch update all appState properties at once
+            appState.futureBaseRate = optimal.baseRate;
+            appState.futureAddonFee = optimal.addonFee;
+            appState.futureTiers = newFutureTiers;
+            
+            // Now that all state is updated, do a single UI sync
+            requestAnimationFrame(() => {
+                // Re-enable calculations
+                window._isCalculating = isCalculating;
                 
-                if (document.getElementById(tierLimitId) && tier.limit !== null) {
-                    document.getElementById(tierLimitId).value = tier.limit;
+                // Sync UI with updated appState values (single update)
+                syncUIWithAppState();
+                
+                // Do a single calculation
+                calculateAll();
+                
+                // Show a success toast if available
+                if (typeof bootstrap !== 'undefined' && document.getElementById('scenarioToast')) {
+                    const toastEl = document.getElementById('scenarioToast');
+                    const toastMsg = document.getElementById('scenarioToastMessage');
+                    if (toastMsg) {
+                        toastMsg.textContent = 'Advisor rates copied to What-If Structure successfully!';
+                    }
+                    const toast = new bootstrap.Toast(toastEl);
+                    toast.show();
                 }
-            }
-        });
-        
-        // Trigger calculations to update
-        handleFutureRateInputChange();
+            });
+        } catch (error) {
+            console.error('Error copying rates:', error);
+            window._isCalculating = isCalculating;
+        }
     });
 }

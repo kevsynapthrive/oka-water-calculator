@@ -5,7 +5,6 @@
  * This file handles:
  * - Predefined community scenarios
  * - Loading scenario data into appState
- * - Importing/exporting scenario data
  */
 
 // Predefined scenarios for sample communities
@@ -750,7 +749,7 @@ function refreshAllSliderDisplays() {
     [...nativeSliders, ...convertedInputs, ...tierInputs].forEach(id => {
         const element = document.getElementById(id);
         if (element) {
-            console.log(`Refreshing display for ${id}`);
+            // console.log(`Refreshing display for ${id}`);
             element.dispatchEvent(new Event('input'));
         }
     });
@@ -1384,6 +1383,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        console.log("Scenario selection handler initialized");
+        // console.log("Scenario selection handler initialized");
     }
 });

@@ -2,9 +2,7 @@
  * Oka' Institute Water Pricing Calculator Tool
  * Financial Planning JavaScript File
  * 
- * This file handles the event delegation for the financial planning sections
- * (loans, projects, and grants) to ensure calculations update properly
- * when users modify, add, or remove financial planning items.
+ Financial Planning Factors for What-If Comparison Results (Current Tier Structure Analysis (Year 0) and What-If Scenario Tier Structure Analysis (Year 1))
  */
 
 /**
@@ -358,15 +356,27 @@ function calculateDebtPayments() {
     let nearTermProjectDebt = 0;
     const projectDebtBreakdown = [];
     
+    // Calculate separate debt values:
+    let currentProjectDebt = 0;
+    let futureProjectDebt = 0;
+
     // Process loans that match project names
     if (appState.loans && appState.loans.length > 0) {
         appState.loans.forEach(loan => {
-            if (loan.name && projectNameMap.has(loan.name.trim().toLowerCase()) && 
-                (loan.year === 0 || loan.year === 1)) {
-                
+            if (loan.name && projectNameMap.has(loan.name.trim().toLowerCase())) {
                 const payment = calculateAnnualLoanPayment(loan);
-                nearTermProjectDebt += payment;
                 
+                // For current, only include year 0 projects
+                if (loan.year === 0) {
+                    currentProjectDebt += payment;
+                }
+                
+                // For future, include both year 0 and year 1 projects
+                if (loan.year === 0 || loan.year === 1) {
+                    futureProjectDebt += payment;
+                }
+                
+                // Add to breakdown with appropriate year
                 projectDebtBreakdown.push({
                     name: loan.name || 'Project Loan',
                     year: loan.year || 0,
@@ -413,6 +423,19 @@ function calculateDebtPayments() {
     appState.existingDebtPayments = existingDebt;
     appState.nearTermProjectDebt = nearTermProjectDebt;
     appState.totalDebtPayments = existingDebt + nearTermProjectDebt;
+    
+    // Also store in the results objects for consistency
+    if (appState.currentResults) {
+        appState.currentResults.existingDebtPayments = existingDebt;
+        appState.currentResults.nearTermProjectDebt = currentProjectDebt; // Only year 0
+        appState.currentResults.totalDebtPayments = existingDebt + currentProjectDebt;
+    }
+
+    if (appState.futureResults) {
+        appState.futureResults.existingDebtPayments = existingDebt;
+        appState.futureResults.nearTermProjectDebt = futureProjectDebt; // Year 0 + year 1
+        appState.futureResults.totalDebtPayments = existingDebt + futureProjectDebt;
+    }
     
     return {
         existing: {
@@ -467,68 +490,65 @@ function calculateAnnualLoanPayment(loan) {
  * Enhanced to show more comprehensive financial metrics
  */
 function updateDebtServiceDisplay() {
-    // Basic debt information
-    const debtInfo = {
-        existing: appState.existingDebtPayments || 0,
-        projects: appState.nearTermProjectDebt || 0,
-        total: appState.totalDebtPayments || 0
-    };
-    
-    // Current rate structure financial metrics
-    const currentRevenue = appState.currentResults?.annualRevenue || 0;
-    const currentNeeds = appState.currentResults?.annualRevenueNeed || 0;
-    const currentGap = appState.currentResults?.revenueGap || 0;
-    const currentPercentage = appState.currentResults?.revenuePercentage || 0;
-    
-    // Future rate structure financial metrics
-    const futureRevenue = appState.futureResults?.annualRevenue || 0;
-    const futureNeeds = appState.futureResults?.annualRevenueNeed || 0;
-    const futureGap = appState.futureResults?.revenueGap || 0;
-    const futurePercentage = appState.futureResults?.revenuePercentage || 0;
-    
-    // Update revenue status indicators for current rate structure
-    updateRevenueStatusDisplay('currentRevenueStatus', currentGap, currentPercentage);
-    
-    // Update revenue status indicators for future rate structure
-    updateRevenueStatusDisplay('futureRevenueStatus', futureGap, futurePercentage);
-    
-    // Update the detailed breakdown sections
-    
-    // 1. Update Current Structure debt breakdown
-    const currentDebtServiceCell = document.getElementById('currentDebtService');
-    if (currentDebtServiceCell) {
-        currentDebtServiceCell.innerHTML = `
-            ${formatCurrency(debtInfo.total)}
-            <a href="#" data-bs-toggle="collapse" data-bs-target="#currentDebtBreakdown" 
-               aria-expanded="false" aria-controls="currentDebtBreakdown" class="small ms-2">
-                <i class="bi bi-info-circle"></i>
-            </a>
-            <div class="collapse mt-2" id="currentDebtBreakdown">
-                <div class="card card-body bg-light py-2 px-3 small">
-                    <div class="mb-1">
-                        <strong>Existing Debt:</strong> ${formatCurrency(debtInfo.existing)}
-                    </div>
-                    ${debtInfo.projects > 0 ? 
-                    `<div class="mb-1">
-                        <strong>Project Debt:</strong> ${formatCurrency(debtInfo.projects)}
-                    </div>` : ''}
-                </div>
-            </div>
-        `;
-    }
-    
-    // 2. Update Future Structure debt breakdown
-    const futureDebtServiceCell = document.getElementById('futureDebtService');
-    if (futureDebtServiceCell) {
-        // Similar code as above for future debt
-    }
-    
-    // 3. Update financial metrics in any expanded details sections
-    updateDetailedFinancialMetrics('currentFinancialMetrics', 
-        currentRevenue, currentNeeds, currentGap, currentPercentage);
-    
-    updateDetailedFinancialMetrics('futureFinancialMetrics', 
-        futureRevenue, futureNeeds, futureGap, futurePercentage);
+  // Current structure debt info
+  const currentDebtInfo = {
+    existing: appState.currentResults?.existingDebtPayments || 0,
+    projects: appState.currentResults?.nearTermProjectDebt || 0,
+    total: appState.currentResults?.totalDebtPayments || 0
+  };
+  
+  // Future structure debt info
+  const futureDebtInfo = {
+    existing: appState.futureResults?.existingDebtPayments || 0,
+    projects: appState.futureResults?.nearTermProjectDebt || 0,
+    total: appState.futureResults?.totalDebtPayments || 0
+  };
+  
+  // Update current structure with currentDebtInfo
+  const currentDebtServiceCell = document.getElementById('currentDebtService');
+  if (currentDebtServiceCell) {
+    currentDebtServiceCell.innerHTML = `
+      ${formatCurrency(currentDebtInfo.total)}
+      <a href="#" data-bs-toggle="collapse" data-bs-target="#currentDebtBreakdown" 
+         aria-expanded="false" aria-controls="currentDebtBreakdown" class="small ms-2">
+          <i class="bi bi-info-circle"></i>
+      </a>
+      <div class="collapse mt-2" id="currentDebtBreakdown">
+        <div class="card card-body bg-light py-2 px-3 small">
+          <div class="mb-1">
+            <strong>Existing Debt:</strong> ${formatCurrency(currentDebtInfo.existing)}
+          </div>
+          ${currentDebtInfo.projects > 0 ? 
+          `<div class="mb-1">
+              <strong>Project Debt:</strong> ${formatCurrency(currentDebtInfo.projects)}
+          </div>` : ''}
+        </div>
+      </div>
+    `;
+  }
+  
+  // Update future structure with futureDebtInfo
+  const futureDebtServiceCell = document.getElementById('futureDebtService');
+  if (futureDebtServiceCell) {
+    futureDebtServiceCell.innerHTML = `
+      ${formatCurrency(futureDebtInfo.total)}
+      <a href="#" data-bs-toggle="collapse" data-bs-target="#futureDebtBreakdown" 
+         aria-expanded="false" aria-controls="futureDebtBreakdown" class="small ms-2">
+          <i class="bi bi-info-circle"></i>
+      </a>
+      <div class="collapse mt-2" id="futureDebtBreakdown">
+        <div class="card card-body bg-light py-2 px-3 small">
+          <div class="mb-1">
+            <strong>Existing Debt:</strong> ${formatCurrency(futureDebtInfo.existing)}
+          </div>
+          ${futureDebtInfo.projects > 0 ? 
+          `<div class="mb-1">
+              <strong>Project Debt:</strong> ${formatCurrency(futureDebtInfo.projects)}
+          </div>` : ''}
+        </div>
+      </div>
+    `;
+  }
 }
 
 /**
@@ -566,6 +586,19 @@ function updateRevenueStatusDisplay(elementId, gap, percentage) {
             <span class="small ms-1">(${percentage.toFixed(1)}%)</span>
         </div>
     `;
+      // Add a note about infrastructure reserve inclusion
+  const reserveNote = appState.includeReserveInRevenue 
+    ? 'Infrastructure reserves are included in revenue needs.'
+    : 'Infrastructure reserves are excluded from revenue needs.';
+  
+  // Update the element with the additional note
+  element.innerHTML = `
+      <div class="badge ${statusClass} p-2">
+          ${statusText}
+          <span class="small ms-1">(${percentage.toFixed(1)}%)</span>
+      </div>
+      <small class="text-muted d-block mt-1">${reserveNote}</small>
+  `;
 }
 
 /**
@@ -616,6 +649,62 @@ function initializeFinancialPlanning() {
     
     // console.log('Financial planning module initialized with debt calculation support');
 }
+function updateInfrastructureReserveDisplay() {
+  // Update current structure infrastructure reserve
+  const currentReserveCell = document.getElementById('currentInfrastructureReserve');
+  if (currentReserveCell) {
+    currentReserveCell.innerHTML = `
+      ${formatCurrency(appState.currentResults?.infrastructureReserve || 0)}
+      <a href="#" data-bs-toggle="collapse" data-bs-target="#currentReserveBreakdown" 
+         aria-expanded="false" aria-controls="currentReserveBreakdown" class="small ms-2">
+          <i class="bi bi-info-circle"></i>
+      </a>
+      <div class="collapse mt-2" id="currentReserveBreakdown">
+        <div class="card card-body bg-light py-2 px-3 small">
+          <p class="mb-1">
+            <strong>Infrastructure Reserve Explanation:</strong>
+          </p>
+          <p class="mb-1">
+            This represents the annual savings needed for future infrastructure replacement.
+            It's calculated as: Infrastructure Cost ÷ Asset Lifespan.
+          </p>
+          <p class="mb-0">
+            <em>Note: Many small systems operate without sufficient reserves. 
+            This calculation shows the ideal amount needed for long-term sustainability.</em>
+          </p>
+          <!-- Checkbox removed from here -->
+        </div>
+      </div>
+    `;
+  }
+  
+  // Update future structure infrastructure reserve
+  const futureReserveCell = document.getElementById('futureInfrastructureReserve');
+  if (futureReserveCell) {
+    futureReserveCell.innerHTML = `
+      ${formatCurrency(appState.futureResults?.infrastructureReserve || 0)}
+      <a href="#" data-bs-toggle="collapse" data-bs-target="#futureReserveBreakdown" 
+         aria-expanded="false" aria-controls="futureReserveBreakdown" class="small ms-2">
+          <i class="bi bi-info-circle"></i>
+      </a>
+      <div class="collapse mt-2" id="futureReserveBreakdown">
+        <div class="card card-body bg-light py-2 px-3 small">
+          <p class="mb-1">
+            <strong>Infrastructure Reserve Explanation:</strong>
+          </p>
+          <p class="mb-1">
+            This represents the annual savings needed for future infrastructure replacement.
+            It's calculated as: Infrastructure Cost ÷ Asset Lifespan.
+          </p>
+          <p class="mb-0">
+            <em>Note: Many small systems operate without sufficient reserves. 
+            This calculation shows the ideal amount needed for long-term sustainability.</em>
+          </p>
+        </div>
+      </div>
+    `;
+  }
+  
 
-// Initialize when the DOM is loaded
+}// Initialize when the DOM is loaded
 document.addEventListener('DOMContentLoaded', initializeFinancialPlanning);

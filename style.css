@@ -396,3 +396,36 @@ thead {
         display: none !important;
     }
 }
+/* Math explanation tooltips */
+.math-explanation {
+  cursor: pointer;
+  margin-left: 0.5rem;
+  /* Force consistent color with !important to override any inherited colors */
+  color: var(--primary) !important;
+  opacity: 0;
+  transition: all 0.3s ease;
+  visibility: hidden;
+  font-size: 0.85rem;
+}
+
+.show-math-explanations .math-explanation {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Add hover effect */
+.show-math-explanations .math-explanation:hover {
+  transform: scale(1.2);
+  color: var(--primary-dark) !important; /* Add !important here too */
+}
+
+.math-formula {
+  font-family: monospace;
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.math-tooltip {
+  max-width: 300px;
+}

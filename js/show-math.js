@@ -1,214 +1,817 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const showMathButton = document.getElementById('showMathButton');
-    const mathModalElement = document.getElementById('mathModal');
-    const mathExplanationContainer = document.getElementById('mathExplanation');
-    if (!showMathButton || !mathModalElement || !mathExplanationContainer) return;
-    const mathModal = new bootstrap.Modal(mathModalElement);
+document.addEventListener("DOMContentLoaded", () => {
+  // DOM element references
+  const showMathButton = document.getElementById("showMathButton");
+  
+  // Exit if button doesn't exist
+  if (!showMathButton) return;
 
-    // Helper: format currency, percent, numbers
-    const fmtCurrency = num => typeof num==='number' && !isNaN(num) ? '$'+num.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2}) : 'N/A';
-    const fmtPercent = num => typeof num==='number' && !isNaN(num) ? (num*100).toFixed(2)+'%' : 'N/A';
-    const fmtNum = num => typeof num==='number' && !isNaN(num) ? num.toLocaleString() : 'N/A';
-    const sectionHeader = (title, level=2) => `<h${level} class="mt-4 mb-3">${title}</h${level}><hr>`;
-    const subHeader = (title, level=3) => `<h${level} class="mt-3 mb-2">${title}</h${level}>`;
-    const formulaLine = f => `<p><em>Formula: ${f}</em></p>`;
-    const explanationBox = (explanation) => `<div class="p-3 bg-light border rounded mb-3"><strong>Explanation:</strong> ${explanation}</div>`;
+  // Track math explanation visibility state
+  let mathExplanationsVisible = false;
 
-    // Build a table from a breakdown array
-    function buildTierTable(breakdown) {
-        let html = '<table class="table table-sm table-bordered"><thead><tr><th>Tier</th><th>Gallons</th><th>Rate ($/1000 gal)</th><th>Cost</th></tr></thead><tbody>';
-        breakdown.forEach((t,i)=>{
-            html += `<tr><td>${i+1}</td><td>${fmtNum(t.gallonsInTier)}</td><td>${fmtCurrency(t.rate)}</td><td>${fmtCurrency(t.cost)}</td></tr>`;
-        });
-        html += '</tbody></table>';
-        return html;
-    }
-
-    // Main click handler
-    showMathButton.addEventListener('click', () => {
-        const s = window.appState;
-        // Validate calculations have run
-        if (!s.currentResults || !s.futureResults || !s.projectionResults || !s.rateRecommendations) {
-            mathExplanationContainer.innerHTML = '<div class="alert alert-warning"><strong>Warning:</strong> Calculations have not been run. Please run "Calculate All" first.</div>';
-            mathModal.show();
-            return;
+  // Main event handler for toggling math explanations
+  showMathButton.addEventListener("click", () => {
+    mathExplanationsVisible = !mathExplanationsVisible;
+    
+    // Toggle class on body to control visibility
+    document.body.classList.toggle('show-math-explanations', mathExplanationsVisible);
+    
+    // Update button text/icon to reflect current state
+    if (mathExplanationsVisible) {
+      showMathButton.innerHTML = '<i class="bi bi-calculator-fill"></i> <span class="d-none d-lg-inline">Hide Math</span>';
+      showMathButton.classList.add('active');
+      
+      // Generate and update all tooltips with current values
+      updateAllMathExplanations();
+    } else {
+      showMathButton.innerHTML = '<i class="bi bi-calculator"></i> <span class="d-none d-lg-inline">Math</span>';
+      showMathButton.classList.remove('active');
+      
+      // Dispose of tooltips when hiding to prevent UI issues
+      const mathTooltips = document.querySelectorAll('.math-explanation');
+      mathTooltips.forEach(tooltip => {
+        const tooltipInstance = bootstrap.Tooltip.getInstance(tooltip);
+        if (tooltipInstance) {
+          tooltipInstance.dispose();
         }
-        let html = '<div class="container-fluid">';
-
-        // 1. Current Structure Analysis
-        html += sectionHeader('Current Tier Structure Analysis');
-        html += explanationBox('This section breaks down how your current water bill is calculated based on your existing rate structure, showing costs by tier and overall affordability.');
-        html += subHeader('Monthly Estimated Bill Breakdown');
-        html += buildTierTable(s.currentResults.tierBreakdown);
-        html += `<p><strong>Base + Add-on:</strong> ${fmtCurrency(s.currentResults.baseRateCost)} + ${fmtCurrency(s.currentResults.addonFeeCost)} = ${fmtCurrency(s.currentResults.totalBill)}</p>`;
-        html += formulaLine('Total Monthly Bill = Base Rate + Add-on Fee + Σ Tier Costs');
-        html += explanationBox('The tier breakdown shows how your water usage is charged at different rates as consumption increases. Each tier has a maximum gallon limit and a specific rate per 1,000 gallons. The base rate is a fixed charge all customers pay regardless of usage, while add-on fees cover specific costs like debt service or infrastructure.');
-
-        html += subHeader('Affordability Analysis');
-        html += `<p>Monthly bill / (MHI/12) = ${fmtPercent(s.currentResults.affordabilityMHI)}</p>`;
-        html += formulaLine('(Total Monthly Bill) / (Median Income ÷ 12)');
-        html += explanationBox('Affordability is measured as the percentage of median household income spent on water. The EPA considers water rates affordable when they are below 2.5% of median household income. Rates under 1.5% are considered highly affordable, between 1.5-2.5% moderately affordable, and above 2.5% potentially burdensome.');
-
-        html += subHeader('Revenue Distribution');
-        s.currentResults.revenuePieData.forEach(r=>{
-            html += `<p>${r.label}: ${fmtCurrency(r.value)}</p>`;
-        });
-        html += explanationBox('Revenue distribution shows how much money comes from each component of your rate structure (base rate, add-on fees, and tier charges). A healthy utility typically has 30-50% of revenue from fixed charges (base and add-on) to ensure financial stability even during low usage periods.');
-
-        html += subHeader('Revenue Status');
-        html += `<p>Annual Revenue: ${fmtCurrency(s.currentResults.annualRevenue)}</p>`;
-        html += `<p>Annual Need: ${fmtCurrency(s.currentResults.annualRevenueNeed)}</p>`;
-        html += `<p>Gap: ${fmtCurrency(s.currentResults.annualRevenue - s.currentResults.annualRevenueNeed)}</p>`;
-        html += formulaLine('Annual Revenue – Annual Revenue Need');
-        html += explanationBox('Revenue status compares what your utility actually collects versus what it needs to cover operations, debt, and capital reserves. A positive gap indicates a surplus that can be used for reserves or additional projects. A negative gap means you\'re not collecting enough to meet financial obligations, which is unsustainable long-term.');
-
-        html += subHeader('Water Loss & Poverty Impact Analysis');
-        html += explanationBox('Water loss represents treated water that never reaches customers due to leaks, breaks, or theft. This is both a financial and resource loss. The poverty burden shows how water bills affect your lowest-income households.');
-        html += `<p>Water Loss Volume: ${fmtNum(s.waterLossResults.waterLossVolume)} gal</p>`;
-        html += formulaLine('Total Annual Water × Water Loss % ÷ (1 - Water Loss %)');
-        html += explanationBox('Water loss volume is calculated based on the reported water loss percentage. Rather than simply multiplying total water by the loss percentage, we use the formula above because water loss is typically measured as a percentage of water produced, not water delivered. This gives a more accurate picture of total losses.');
-        html += `<p>Lost Revenue: ${fmtCurrency(s.waterLossResults.currentWaterLossFinancial)}</p>`;
-        html += formulaLine('Water Loss Volume ÷ 1000 × Weighted Average Rate');
-        html += explanationBox('Lost revenue converts water loss into financial impact by multiplying the lost volume by your weighted average rate per 1,000 gallons. The weighted average rate accounts for your full rate structure including base rate, add-on fees, and tier charges, providing a comprehensive financial impact assessment.');
-        html += `<p>Poverty-level Burden: ${fmtPercent(s.waterLossResults.currentPovertyPercent)}</p>`;
-        html += formulaLine('Monthly Water Bill ÷ (Poverty-Level Income ÷ 12)');
-        html += explanationBox('The poverty burden measures water affordability specifically for households at the poverty level, showing what percentage of their monthly income goes to water bills. Rates above 5% for low-income households are considered highly burdensome, 3-5% moderately burdensome, and below 3% more affordable.');
-
-        html += subHeader('Bill Comparison at Different Usage Levels');
-        html += '<ul>'; s.currentResults.billComparison.forEach(c=>{
-            html += `<li>${fmtNum(c.usage)} gal: ${fmtCurrency(c.monthlyBill)}</li>`;
-        }); html += '</ul>';
-        html += explanationBox('This comparison shows how bills scale at different consumption levels, helping you understand how your rate structure affects various types of customers - from conservative users to high-volume consumers.');
-
-        // 2. What-If Structure Analysis
-        html += sectionHeader('What-If Scenario Tier Structure Analysis');
-        html += explanationBox('This section shows the same calculations as above but applied to your proposed new rate structure, allowing side-by-side comparison of current vs. proposed rates.');
-        html += subHeader('Monthly Estimated Bill Breakdown');
-        html += buildTierTable(s.futureResults.tierBreakdown);
-        html += `<p><strong>Total Monthly Bill:</strong> ${fmtCurrency(s.futureResults.totalBill)}</p>`;
-        html += subHeader('Affordability Analysis');
-        html += `<p>${fmtPercent(s.futureResults.affordabilityMHI)}</p>`;
-        html += subHeader('Revenue Distribution');
-        s.futureResults.revenuePieData.forEach(r=>{
-            html += `<p>${r.label}: ${fmtCurrency(r.value)}</p>`;
-        });
-        html += subHeader('Revenue Status');
-        html += `<p>Annual Revenue: ${fmtCurrency(s.futureResults.annualRevenue)}</p>`;
-        html += `<p>Annual Need: ${fmtCurrency(s.futureResults.annualRevenueNeed)}</p>`;
-        html += formulaLine('Projected Annual Revenue – Annual Need');
-        html += subHeader('Water Loss & Poverty Impact Analysis');
-        html += `<p>Lost Revenue: ${fmtCurrency(s.waterLossResults.futureWaterLossFinancial)}</p>`;
-        html += explanationBox('This shows the financial impact of water loss under the new rate structure. If the proposed rates are higher, water loss will have a greater financial impact, highlighting the importance of water conservation and system improvements.');
-        html += `<p>Poverty-level Burden: ${fmtPercent(s.waterLossResults.futurePovertyPercent)}</p>`;
-        html += explanationBox('This shows how affordable your proposed rates would be for households at poverty level. If this percentage increases significantly, you may want to consider low-income assistance programs or tiered rates that keep essential water usage affordable.');
-        html += subHeader('Bill Comparison at Different Usage Levels');
-        html += '<ul>'; s.futureResults.billComparison.forEach(c=>{
-            html += `<li>${fmtNum(c.usage)} gal: ${fmtCurrency(c.monthlyBill)}</li>`;
-        }); html += '</ul>';
-
-        // 3. Bill Impact by Usage Level & Revenue Composition
-        html += sectionHeader('3. Bill Impact by Usage Level');
-        html += explanationBox('This table breaks down bill components across different usage levels, helping you understand how your rate structure impacts different types of water users.');
-        html += '<div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr><th>Usage (gal)</th><th>Base Charge</th><th>Add-On Fee</th><th>Tier Charges</th><th>Total Bill</th><th>% of MHI</th></tr></thead><tbody>';
-        s.currentResults.billComparison.forEach(c => {
-            html += `<tr><td>${fmtNum(c.usage)}</td><td>${fmtCurrency(c.base)}</td><td>${fmtCurrency(c.addon)}</td><td>${fmtCurrency(c.tierCharges)}</td><td>${fmtCurrency(c.monthlyBill)}</td><td>${fmtPercent(c.affordability)}</td></tr>`;
-        });
-        html += '</tbody></table></div>';
-        html += formulaLine('Monthly Bill = Base Rate + Add-On Fee + Σ (Gallons in Tier × Tier Rate ÷ 1000)');
-        html += explanationBox('For each usage level, we calculate how much water falls into each tier, multiply by the appropriate rate per 1,000 gallons, and add the fixed charges. The affordability column shows what percentage of median household income this bill represents.');
-
-        html += sectionHeader('4. Revenue Composition');
-        html += explanationBox('Revenue composition shows the financial breakdown of where your utility\'s money comes from. A balanced structure typically has 30-50% from fixed charges (base rate and add-on fees) and the remainder from volumetric (tier) charges. This balance provides stability while still encouraging conservation.');
-        html += subHeader('Current Structure');
-        html += '<ul>'; s.currentResults.revenuePieData.forEach(r => {
-            html += `<li>${r.label}: ${fmtCurrency(r.value)} (${fmtPercent(r.value / s.currentResults.annualRevenue)})</li>`;
-        }); html += '</ul>';
-        html += subHeader('What-If Structure');
-        html += '<ul>'; s.futureResults.revenuePieData.forEach(r => {
-            html += `<li>${r.label}: ${fmtCurrency(r.value)} (${fmtPercent(r.value / s.futureResults.annualRevenue)})</li>`;
-        }); html += '</ul>';
-        html += formulaLine('Component % = Component Revenue ÷ Total Annual Revenue');
-
-        html += sectionHeader('5. Financial Health Summary');
-        html += explanationBox('This summary compares key financial indicators between your current and proposed rate structures. A financially healthy utility should aim for a coverage ratio of at least 1.0 (break-even) but ideally 1.1-1.2 to build reserves for unexpected expenses.');
-        html += '<table class="table table-sm table-bordered"><tbody>';
-        html += `<tr><th>Metric</th><th>Current</th><th>What-If</th></tr>`;
-        html += `<tr><td>Annual Revenue</td><td>${fmtCurrency(s.currentResults.annualRevenue)}</td><td>${fmtCurrency(s.futureResults.annualRevenue)}</td></tr>`;
-        html += `<tr><td>Annual Need</td><td>${fmtCurrency(s.currentResults.annualRevenueNeed)}</td><td>${fmtCurrency(s.futureResults.annualRevenueNeed)}</td></tr>`;
-        html += `<tr><td>Revenue Gap</td><td>${fmtCurrency(s.currentResults.annualRevenue - s.currentResults.annualRevenueNeed)}</td><td>${fmtCurrency(s.futureResults.annualRevenue - s.futureResults.annualRevenueNeed)}</td></tr>`;
-        html += `<tr><td>Coverage Ratio</td><td>${fmtPercent(s.currentResults.annualRevenue / s.currentResults.annualRevenueNeed)}</td><td>${fmtPercent(s.futureResults.annualRevenue / s.futureResults.annualRevenueNeed)}</td></tr>`;
-        html += '</tbody></table>';
-        html += formulaLine('Coverage Ratio = Annual Revenue ÷ Annual Revenue Need');
-
-        // 6. Financial Advisor Recommendations Expanded
-        html += sectionHeader('6. Financial Advisor - Rate Recommendations');
-        html += explanationBox('The Financial Advisor feature uses your financial data, required revenue, and growth projections to recommend optimal rates. These recommendations aim to balance full cost recovery with affordability considerations.');
-        const rec = s.rateRecommendations.optimalRates;
-        html += subHeader('6.1 Recommended Rate Structure');
-        html += '<table class="table table-sm table-bordered"><thead><tr><th>Component</th><th>Value</th></tr></thead><tbody>';
-        html += `<tr><td>Base Rate</td><td>${fmtCurrency(rec.baseRate)}</td></tr>`;
-        html += `<tr><td>Add-On Fee</td><td>${fmtCurrency(rec.addonFee)}</td></tr>`;
-        rec.tiers.forEach((t,i) => {
-            html += `<tr><td>Tier ${i+1} (${fmtNum(t.limit)} gal)</td><td>${fmtCurrency(t.rate)} /1000 gal</td></tr>`;
-        });
-        html += '</tbody></table>';
-        html += '<p><em>Generated by <strong>generateIdealTargetRateStructure()</strong> based on target cost recovery settings.</em></p>';
-        html += explanationBox('The recommended rate structure is calculated using an algorithm that considers your current revenue needs, projected growth, and infrastructure plans. It aims to provide a financially sustainable structure that ensures adequate revenue while maintaining reasonable affordability. The tier structure encourages conservation by charging higher rates for higher usage.');
-
-        html += subHeader('6.2 Year-by-Year Financial Projections');
-        html += explanationBox('This table shows projected financial performance over time, accounting for inflation, customer growth, and planned capital projects. It helps you visualize whether your rates will be sustainable long-term.');
-        html += '<div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr><th>Year</th><th>Revenue Need</th><th>Projected Revenue</th><th>Reserves</th></tr></thead><tbody>';
-        s.projectionResults.years.forEach((yr, idx) => {
-            html += `<tr><td>${yr}</td><td>${fmtCurrency(s.projectionResults.revenueNeeds[idx])}</td><td>${fmtCurrency(s.projectionResults.revenue[idx])}</td><td>${fmtCurrency(s.projectionResults.reserves[idx])}</td></tr>`;
-        });
-        html += '</tbody></table></div>';
-        html += formulaLine('Reserves = Previous Reserves + (Projected Revenue – Revenue Need)');
-        html += explanationBox('Revenue needs include operations, maintenance, debt service, and capital reserves, adjusted annually for inflation. Projected revenue accounts for rate changes and customer growth. Reserves show cumulative surplus or deficit over time. Negative reserves indicate the need for additional rate adjustments.');
-
-        html += subHeader('6.3 Rate Structure Changes Over Time');
-        html += explanationBox('The calculator can model incremental rate changes over several years rather than a single large increase, which may be more palatable to customers. This helps plan a multi-year approach to financial sustainability.');
-        html += '<p>See Rate Change chart for annual base, addon, and tier rate trends.</p>';        
-        
-        html += subHeader('6.4 Poverty-Level Burden Analysis');
-        html += explanationBox('This analysis compares how affordable your water rates are specifically for households at poverty level income, which is a more stringent test of affordability than using median income. It helps ensure your most vulnerable residents can afford essential water service.');
-        html += '<div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr><th>Scenario</th><th>Monthly Water Bill</th><th>% of Poverty Income</th><th>Status</th></tr></thead><tbody>';
-        
-        // Current poverty burden
-        const currentPovertyBill = s.currentResults?.totalBill || 0;
-        const currentPovertyPercent = s.waterLossResults?.currentPovertyPercent || 0;
-        const currentPovertyStatus = currentPovertyPercent > 0.05 ? 'High Burden' : currentPovertyPercent > 0.03 ? 'Moderate Burden' : 'Affordable';
-        html += `<tr><td>Current Rates</td><td>${fmtCurrency(currentPovertyBill)}</td><td>${fmtPercent(currentPovertyPercent)}</td><td>${currentPovertyStatus}</td></tr>`;
-        
-        // Future poverty burden
-        const futurePovertyBill = s.futureResults?.totalBill || 0;
-        const futurePovertyPercent = s.waterLossResults?.futurePovertyPercent || 0;
-        const futurePovertyStatus = futurePovertyPercent > 0.05 ? 'High Burden' : futurePovertyPercent > 0.03 ? 'Moderate Burden' : 'Affordable';
-        html += `<tr><td>Proposed Rates</td><td>${fmtCurrency(futurePovertyBill)}</td><td>${fmtPercent(futurePovertyPercent)}</td><td>${futurePovertyStatus}</td></tr>`;
-        
-        html += '</tbody></table></div>';
-        html += formulaLine('Affordability = Monthly Bill ÷ (Poverty Income ÷ 12)');
-        html += explanationBox('For households at poverty level, water bills exceeding 5% of monthly income represent a high financial burden, while 3-5% is a moderate burden, and below 3% is generally considered more affordable. Consider rate assistance programs if your rates create a high burden for low-income households.');        
-        
-        html += subHeader('6.5 Water Loss Impact Analysis');
-        html += explanationBox('This analysis quantifies the financial impact of non-revenue water (leaks, breaks, theft, etc.) under both current and proposed rate structures. Reducing water loss can significantly improve financial sustainability without raising rates.');
-        html += '<div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr><th>Metric</th><th>Current Structure</th><th>Proposed Structure</th></tr></thead><tbody>';
-        
-        const waterLossVolume = s.waterLossResults?.waterLossVolume || 0;
-        const currentWaterLossFinancial = s.waterLossResults?.currentWaterLossFinancial || 0;
-        const futureWaterLossFinancial = s.waterLossResults?.futureWaterLossFinancial || 0;
-        const currentWaterLossPercent = s.waterLossResults?.currentWaterLossPercent || 0;
-        const futureWaterLossPercent = s.waterLossResults?.futureWaterLossPercent || 0;
-        
-        html += `<tr><td>Water Lost (gal/year)</td><td>${fmtNum(waterLossVolume)}</td><td>${fmtNum(waterLossVolume)}</td></tr>`;
-        html += `<tr><td>Revenue Lost</td><td>${fmtCurrency(currentWaterLossFinancial)}</td><td>${fmtCurrency(futureWaterLossFinancial)}</td></tr>`;
-        html += `<tr><td>% of Annual Revenue</td><td>${fmtPercent(currentWaterLossPercent)}</td><td>${fmtPercent(futureWaterLossPercent)}</td></tr>`;
-        
-        html += '</tbody></table></div>';
-        html += formulaLine('Revenue Lost = (Lost Water ÷ 1000) × Weighted Avg Rate');
-        html += explanationBox('Water loss is calculated based on your reported percentage. For a system with 20% water loss, it means that 20% of the water produced never reaches paying customers. The financial impact is calculated by multiplying the lost water volume by your weighted average rate (total revenue divided by total gallons delivered). Investing in leak detection and infrastructure repairs often has a quick payback period.');
-
-        html += '</div>';
-        mathExplanationContainer.innerHTML = html;
-        mathModal.show();
+      });
+    }
+  });
+  
+  /**
+   * Check if an element ID represents a calculated result (not an input)
+   * Only these elements should receive math explanations
+   */
+  function isResultElement(elementId) {
+      const resultElementPatterns = [
+          // Bill breakdown results
+          'BaseRateCost', 'AddonFeeCost', 'TotalBill',
+          
+          // Tier breakdown results
+          'Tier1Cost', 'Tier2Cost', 'Tier3Cost', 'Tier4Cost',
+          'Tier1Usage', 'Tier2Usage', 'Tier3Usage', 'Tier4Usage',
+          
+          // Affordability analysis results
+          'AffordabilityMHI', 'PovertyPercent',
+          
+          // Revenue analysis results
+          'AnnualRevenue', 'AnnualRevenueNeed', 'RevenueGap', 'RevenuePercentage', 
+          
+          // Financial planning results
+          'OperatingCost', 'DebtService', 'InfrastructureReserve',
+          'GrantFunding', 'NetRevenueNeed',
+          
+          // Financial projection results
+          'projectionYear', 'projectionBaseRate', 'projectionAddonFee', 
+          'projectionExpectedRevenue', 'projectionNeededRevenue', 'projectionRevenueGap', 'projectionReserveBalance',
+          
+          // Water loss analysis results
+          'WaterLossVolume', 'WaterLossFinancial', 'WaterLossPercent',
+          
+          // Chart comparison elements - UPDATED
+          'billImpactChart', 'currentRevenueCompositionChart', 'futureRevenueCompositionChart',
+          'financialProjectionsChart', 'rateStructureChart', 'affordabilityAnalysisChart', 'waterLossImpactChart',
+          'ChartContainer', // Add container pattern
+          
+          // Key metrics comparison
+          'keyMetricsRow', 'metricChange', 'metricCurrent', 'metricFuture',
+          
+          // Financial advisor recommendations
+          'recommendedBaseRate', 'recommendedAddonFee', 'recommendedAvgBill', 'recommendedAffordabilityMHI',
+          'recommendedTier1Limit', 'recommendedTier1Rate', 'recommendedTier2Limit', 'recommendedTier2Rate',
+          'recommendedTier3Limit', 'recommendedTier3Rate', 'recommendedTier4Limit', 'recommendedTier4Rate'
+      ];
+      
+      // Check if elementId matches any of the result patterns
+      return resultElementPatterns.some(pattern => elementId.includes(pattern));
+  }  
+  
+  /**
+   * Updates all math explanations with current values from appState
+   * Called ONLY when the Show Math button is clicked
+   */
+  function updateAllMathExplanations() {
+    if (!mathExplanationsVisible) return;
+    
+    // Make sure mathExplanations is accessible
+    if (typeof window.mathExplanations === 'undefined') {
+      console.error('Math explanations not found! Make sure math-explanations.js is loaded.');
+      return;
+    }
+    
+    // Update tooltips for current rate structure
+    updateRateStructureExplanations('current', appState.currentResults, appState.currentTiers, 
+                                    appState.currentBaseRate, appState.currentAddonFee);
+    
+    // Update tooltips for future rate structure
+    updateRateStructureExplanations('future', appState.futureResults, appState.futureTiers, 
+                                    appState.futureBaseRate, appState.futureAddonFee);
+    updateWaterLossAndPovertyExplanations();
+    // Update revenue and financial planning explanations
+    updateRevenueExplanations();
+    
+    // Update financial projections explanations
+    updateProjectionExplanations();
+    
+    // Add explanation for key metrics comparison table
+    updateKeyMetricsComparisonExplanations();
+    
+    // Add explanations for financial advisor recommendations
+    updateRateRecommendationsExplanations();
+    
+    // Add explanations for chart sections
+    updateChartExplanations();
+    
+    // Initialize all tooltips
+    const mathTooltips = document.querySelectorAll('.math-explanation');
+    mathTooltips.forEach(tooltip => {
+      // Dispose if existing tooltip
+      const tooltipInstance = bootstrap.Tooltip.getInstance(tooltip);
+      if (tooltipInstance) {
+        tooltipInstance.dispose();
+      }
+      
+      // Create new tooltip with HTML enabled
+      new bootstrap.Tooltip(tooltip, {
+        container: 'body',
+        html: true, // Make sure this is set to true
+        trigger: 'hover focus',
+        placement: 'auto'
+      });
     });
-});
+  }
+  
+  /**
+   * Updates math explanations for a specific rate structure
+   */
+function updateRateStructureExplanations(prefix, results, tiers, baseRate, addonFee) {
+  const tierBreakdown = results.tierBreakdown || [];
+  
+  // Use pre-calculated tier breakdown
+  tierBreakdown.forEach((tier, i) => {
+    if (tier.enabled !== false && tier.gallons > 0) {
+      updateElementTooltip(`${prefix}Tier${i+1}Cost`, 
+        window.mathExplanations.billBreakdown.tierCost(i, tier));
+    }
+  });
+}  
+  /**
+   * Updates math explanations for revenue status
+   */
+  function updateRevenueExplanations() {
+      // Current revenue explanations - use ONLY pre-calculated values from appState
+      updateElementTooltip('currentAnnualRevenue', 
+                         window.mathExplanations.revenue.annualRevenue(
+                             appState.currentResults?.annualRevenue || 0, // Pre-calculated result
+                             appState.currentResults?.totalBill || 0, 
+                             appState.customerCount
+                         ));
+      
+      updateElementTooltip('currentAnnualRevenueNeed', 
+                         window.mathExplanations.revenue.annualRevenueNeed(
+                             appState.currentResults?.annualRevenueNeed || 0, // Pre-calculated result
+                             appState.currentResults?.operatingCost || appState.operatingCost, 
+                             appState.currentResults?.totalDebtPayments || 0, 
+                             appState.currentResults?.infrastructureReserve || 0, 
+                             appState.currentResults?.currentYearGrants || 0 // Single number, not array
+                         ));
+      
+      updateElementTooltip('currentRevenueGap', 
+                         window.mathExplanations.revenue.revenueGap(
+                             appState.currentResults?.revenueGap || 0, // Pre-calculated result
+                             appState.currentResults?.annualRevenue || 0, 
+                             appState.currentResults?.annualRevenueNeed || 0
+                         ));
+      
+      updateElementTooltip('currentRevenuePercentage', 
+                         window.mathExplanations.revenue.revenuePercentage(
+                             appState.currentResults?.revenuePercentage || 0, // Pre-calculated result
+                             appState.currentResults?.annualRevenue || 0, 
+                             appState.currentResults?.annualRevenueNeed || 0
+                         ));
+      
+      // Future revenue explanations - use ONLY pre-calculated values from appState
+      updateElementTooltip('futureAnnualRevenue', 
+                         window.mathExplanations.revenue.annualRevenue(
+                             appState.futureResults?.annualRevenue || 0, // Pre-calculated result
+                             appState.futureResults?.totalBill || 0, 
+                             appState.customerCount
+                         ));
+      
+      updateElementTooltip('futureAnnualRevenueNeed', 
+                         window.mathExplanations.revenue.annualRevenueNeed(
+                             appState.futureResults?.annualRevenueNeed || 0, // Pre-calculated result
+                             appState.futureResults?.operatingCost || appState.operatingCost, 
+                             appState.futureResults?.totalDebtPayments || 0, 
+                             appState.futureResults?.infrastructureReserve || 0, 
+                             appState.futureResults?.nearTermGrants || 0 // Single number, not array
+                         ));
+      
+      updateElementTooltip('futureRevenueGap', 
+                         window.mathExplanations.revenue.revenueGap(
+                             appState.futureResults?.revenueGap || 0, // Pre-calculated result
+                             appState.futureResults?.annualRevenue || 0, 
+                             appState.futureResults?.annualRevenueNeed || 0
+                         ));
+      
+      updateElementTooltip('futureRevenuePercentage', 
+                         window.mathExplanations.revenue.revenuePercentage(
+                             appState.futureResults?.revenuePercentage || 0, // Pre-calculated result
+                             appState.futureResults?.annualRevenue || 0, 
+                             appState.futureResults?.annualRevenueNeed || 0
+                         ));
+                                                                      
+      // Financial planning factors - use pre-calculated values
+      updateElementTooltip('currentOperatingCost', 
+                         window.mathExplanations.financialPlanning.operatingCost(
+                             appState.currentResults?.operatingCost || appState.operatingCost, // Pre-calculated or base value
+                             appState.operatingCost, // Base cost
+                             appState.inflationRate || 0, 
+                             0 // Current year
+                         ));
+                             
+      updateElementTooltip('currentDebtService', 
+                         window.mathExplanations.financialPlanning.debtService(
+                             appState.currentResults?.totalDebtPayments || 0, // Pre-calculated total debt service
+                             appState.loans || [], 
+                             0 // Current year
+                         ));
+                             
+      updateElementTooltip('currentInfrastructureReserve', 
+                         window.mathExplanations.financialPlanning.infrastructureReserve(
+                             appState.currentResults?.infrastructureReserve || 0, // Pre-calculated reserve
+                             appState.infrastructureCost || 0, 
+                             appState.assetLifespan || 1, 
+                             appState.inflationRate || 0, 
+                             0 // Current year
+                         ));
+      
+      updateElementTooltip('currentGrantFunding', 
+                         window.mathExplanations.financialPlanning.yearlyGrants(
+                             appState.currentResults?.currentYearGrants || 0, // Pre-calculated grants for current year
+                             0 // Current year
+                         ));
+      
+      updateElementTooltip('currentNetRevenueNeed', 
+                         window.mathExplanations.financialPlanning.netRevenueNeed(
+                             appState.currentResults?.annualRevenueNeed || 0, // Pre-calculated net need
+                             appState.currentResults?.operatingCost || appState.operatingCost,
+                             appState.currentResults?.totalDebtPayments || 0,
+                             appState.currentResults?.infrastructureReserve || 0,
+                             appState.currentResults?.currentYearGrants || 0
+                         ));
+      
+      // Future financial planning factors
+      updateElementTooltip('futureOperatingCost', 
+                         window.mathExplanations.financialPlanning.operatingCost(
+                             appState.futureResults?.operatingCost || appState.operatingCost, // Pre-calculated or base value
+                             appState.operatingCost, // Base cost
+                             appState.inflationRate || 0, 
+                             1 // Future year
+                         ));
+                             
+      updateElementTooltip('futureDebtService', 
+                         window.mathExplanations.financialPlanning.debtService(
+                             appState.futureResults?.totalDebtPayments || 0, // Pre-calculated total debt service
+                             appState.loans || [], 
+                             1 // Future year
+                         ));
+                             
+      updateElementTooltip('futureInfrastructureReserve', 
+                         window.mathExplanations.financialPlanning.infrastructureReserve(
+                             appState.futureResults?.infrastructureReserve || 0, // Pre-calculated reserve
+                             appState.infrastructureCost || 0, 
+                             appState.assetLifespan || 1, 
+                             appState.inflationRate || 0, 
+                             1 // Future year
+                         ));
+      
+      updateElementTooltip('futureGrantFunding', 
+                         window.mathExplanations.financialPlanning.yearlyGrants(
+                             appState.futureResults?.nearTermGrants || 0, // Pre-calculated grants for future year
+                             1 // Future year
+                         ));
+      
+      updateElementTooltip('futureNetRevenueNeed', 
+                         window.mathExplanations.financialPlanning.netRevenueNeed(
+                             appState.futureResults?.annualRevenueNeed || 0, // Pre-calculated net need
+                             appState.futureResults?.operatingCost || appState.operatingCost,
+                             appState.futureResults?.totalDebtPayments || 0,
+                             appState.futureResults?.infrastructureReserve || 0,
+                             appState.futureResults?.nearTermGrants || 0
+                         ));
+  }
+  
+  function updateWaterLossAndPovertyExplanations() {
+      // Water Loss Analysis - using pre-calculated values from appState
+      updateElementTooltip('currentWaterLossVolume', 
+                 window.mathExplanations.waterLoss.waterLossVolume(
+                     appState.waterLossResults?.waterLossVolume || 0, // Pre-calculated loss volume
+                     appState.avgMonthlyUsage,
+                     appState.customerCount,
+                     appState.waterLossPercent
+                   ));
+                       
+      updateElementTooltip('currentWaterLossFinancial', 
+                    window.mathExplanations.waterLoss.financialImpact(
+                        appState.waterLossResults?.currentWaterLossFinancial || 0, // Pre-calculated financial impact
+                        appState.waterLossResults?.waterLossVolume || 0, // Pre-calculated loss volume
+                        appState.currentResults?.tierBreakdown || [] // Current tier breakdown for rate calculation
+                    ));
+  
+      // Add water loss percentage tooltip for current rates
+      updateElementTooltip('currentWaterLossPercent', 
+                    window.mathExplanations.waterLoss.percentOfRevenue(
+                        appState.waterLossResults?.currentWaterLossFinancial || 0, // Pre-calculated financial impact
+                        appState.currentResults?.annualRevenue || 0, // Pre-calculated annual revenue
+                        appState.waterLossResults?.currentWaterLossPercent ? (appState.waterLossResults.currentWaterLossPercent * 100) : 0 // Pre-calculated percentage
+                    ));
+      
+      updateElementTooltip('futureWaterLossVolume', 
+                        window.mathExplanations.waterLoss.waterLossVolume(
+                            appState.waterLossResults?.waterLossVolume || 0, // Same loss volume (infrastructure doesn't change)
+                            appState.avgMonthlyUsage,
+                            appState.customerCount, 
+                            appState.waterLossPercent
+                        ));
+      
+      updateElementTooltip('futureWaterLossFinancial', 
+                    window.mathExplanations.waterLoss.financialImpact(
+                        appState.waterLossResults?.futureWaterLossFinancial || 0, // Pre-calculated future financial impact
+                        appState.waterLossResults?.waterLossVolume || 0, // Pre-calculated loss volume
+                        appState.futureResults?.tierBreakdown || [] // Future tier breakdown for rate calculation
+                    ));
+      
+      updateElementTooltip('futureWaterLossPercent', 
+                        window.mathExplanations.waterLoss.percentOfRevenue(
+                            appState.waterLossResults?.futureWaterLossFinancial || 0, // Pre-calculated future financial impact
+                            appState.futureResults?.annualRevenue || 0, // Pre-calculated future annual revenue
+                            appState.waterLossResults?.futureWaterLossPercent ? (appState.waterLossResults.futureWaterLossPercent * 100) : 0 // Pre-calculated percentage
+                        ));
+      
+      // Poverty Impact Analysis - use pre-calculated values
+      const monthlyPovertyIncome = appState.povertyIncome / 12;
+      
+      // For current rates
+      const currentPovertyPercentage = appState.waterLossResults?.currentPovertyPercent 
+          ? (appState.waterLossResults.currentPovertyPercent * 100)
+          : ((appState.currentResults?.totalBill || 0) / monthlyPovertyIncome * 100);
+      
+      updateElementTooltip('currentPovertyPercent', 
+                     window.mathExplanations.affordability.percentOfPovertyIncome(
+                         appState.currentResults?.totalBill || 0, // Pre-calculated current bill
+                         appState.povertyIncome, // Annual poverty income input
+                         monthlyPovertyIncome, // Pre-calculated monthly poverty income
+                         currentPovertyPercentage // Pre-calculated percentage
+                       ));
+      
+      // For future rates
+      const futurePovertyPercentage = appState.waterLossResults?.futurePovertyPercent 
+          ? (appState.waterLossResults.futurePovertyPercent * 100)
+          : ((appState.futureResults?.totalBill || 0) / monthlyPovertyIncome * 100);
+      
+      updateElementTooltip('futurePovertyPercent', 
+                        window.mathExplanations.affordability.percentOfPovertyIncome(
+                            appState.futureResults?.totalBill || 0, // Pre-calculated future bill
+                            appState.povertyIncome, // Annual poverty income input
+                            monthlyPovertyIncome, // Pre-calculated monthly poverty income
+                            futurePovertyPercentage // Pre-calculated percentage
+                        ));
+  }  
+  /**
+   * Updates math explanations for financial projections
+   */
+  function updateProjectionExplanations() {
+    if (!appState.projectionResults || !appState.projectionResults.years) return;
+    
+// For each column in the projection table
+const projectionTable = document.getElementById('projectionTable');
+if (projectionTable) {
+  const headers = projectionTable.querySelectorAll('th');
+  headers.forEach((header, index) => {
+    if (index > 0) { // Skip the Year column
+      const columnId = `projectionColumn_${index}`;
+      header.id = columnId;
+      updateElementTooltip(columnId, window.mathExplanations.financialProjection[getColumnExplanationKey(index)]);
+    }
+  });
+}
+
+    // Add explanations to projection table rows
+    appState.projectionResults.years.forEach((year, i) => {
+      const yearState = {
+        operatingCost: appState.projectionResults.operatingCosts ? appState.projectionResults.operatingCosts[i] : 0,
+        debtService: appState.projectionResults.debtService ? appState.projectionResults.debtService[i] : 0,
+        infrastructureFunding: appState.projectionResults.infrastructureFunding ? appState.projectionResults.infrastructureFunding[i] : 0,
+        revenueNeeds: appState.projectionResults.revenueNeeds ? appState.projectionResults.revenueNeeds[i] : 0,
+        revenue: appState.projectionResults.revenue ? appState.projectionResults.revenue[i] : 0,
+        reserveBalance: appState.projectionResults.reserves ? appState.projectionResults.reserves[i] : 0
+      };
+      
+      updateElementTooltip(`projectionYear${year}`, 
+                          window.mathExplanations.financialProjection.yearlyProjection(year, yearState));
+    });
+
+  }
+  
+    /**
+     * Helper function to update or create a tooltip on an element
+     */
+    function updateElementTooltip(elementId, tooltipContent) {
+      // Only add tooltips to calculated results, not input fields
+      if (!isResultElement(elementId)) return;
+      
+      const element = document.getElementById(elementId);
+      if (!element) return;
+      
+      // Find the table cell (TD) that contains this element
+      let tableCell = element;
+      while (tableCell && tableCell.tagName !== 'TD') {
+        tableCell = tableCell.parentElement;
+      }
+      
+      // Determine where to place the tooltip icon
+      const container = tableCell || element.parentElement;
+      
+      // Look for existing math explanation icon
+      let mathIcon = container.querySelector('.math-explanation');
+      
+      // If no icon exists, create one
+      if (!mathIcon) {
+        mathIcon = document.createElement('i');
+        mathIcon.className = 'bi bi-calculator-fill math-explanation';
+        mathIcon.style.cursor = 'pointer';
+        mathIcon.setAttribute('data-bs-toggle', 'tooltip');
+        mathIcon.setAttribute('data-bs-placement', 'auto');
+        
+        if (tableCell) {
+          // Create a wrapper to contain both the original content and the icon
+          // to ensure they stay on the same line
+          const wrapper = document.createElement('div');
+          wrapper.style.display = 'flex';
+          wrapper.style.alignItems = 'center';
+          wrapper.style.gap = '4px';
+          
+          // Move cell's contents (except any existing tooltips) into wrapper
+          while (tableCell.firstChild) {
+            if (!tableCell.firstChild.classList || !tableCell.firstChild.classList.contains('math-explanation')) {
+              wrapper.appendChild(tableCell.firstChild);
+            } else {
+              tableCell.removeChild(tableCell.firstChild);
+            }
+          }
+          
+          // Add the icon to the wrapper
+          wrapper.appendChild(mathIcon);
+          
+          // Add the wrapper to the cell
+          tableCell.appendChild(wrapper);
+        } else {
+          // For non-table elements, use the standard approach
+          element.parentNode.insertBefore(mathIcon, element.nextSibling);
+        }
+      }
+      
+      // Update tooltip content
+      mathIcon.setAttribute('data-bs-original-title', tooltipContent);
+    }
+  
+  /**
+   * Updates math explanations for key metrics comparison table
+   */
+  function updateKeyMetricsComparisonExplanations() {
+      const table = document.getElementById('keyMetricsComparisonTable');
+      if (!table) return;
+      
+      // Add tooltips to each metric row using pre-calculated values
+      const rows = table.querySelectorAll('tbody tr');
+      rows.forEach(row => {
+        const metricCell = row.querySelector('td:first-child');
+        const currentCell = row.querySelector('td:nth-child(2)');
+        const futureCell = row.querySelector('td:nth-child(3)');
+        const changeCell = row.querySelector('td:nth-child(4)');
+        
+        if (!metricCell) return;
+        
+        const metricName = metricCell.textContent.trim();
+        let explanation = '';
+        
+        // Generate explanations based on the metric type using pre-calculated values
+        if (metricName.includes('Monthly Bill')) {
+          explanation = window.mathExplanations.comparison.averageBill();
+        } else if (metricName.includes('Affordability')) {
+          explanation = window.mathExplanations.comparison.affordability();
+        } else if (metricName.includes('Annual System Revenue')) {
+          explanation = window.mathExplanations.comparison.revenue();
+        } else if (metricName.includes('Revenue-Need Coverage')) {
+          explanation = window.mathExplanations.comparison.revenueCoverage();
+        } else if (metricName.includes('Revenue Gap')) {
+          explanation = window.mathExplanations.comparison.revenueGap();
+        }
+        
+        // Only add tooltip if we have an explanation
+        if (explanation) {
+          // Add tooltip to the metric name cell
+          const rowId = `keyMetricsRow_${metricName.replace(/\W+/g, '')}`;
+          metricCell.id = rowId;
+          updateElementTooltip(rowId, explanation);
+          
+          // Add tooltip to the change cell if present
+          if (changeCell) {
+            const changeId = `metricChange_${metricName.replace(/\W+/g, '')}`;
+            changeCell.id = changeId;
+            updateElementTooltip(changeId, explanation);
+          }
+          
+          // Add tooltips to current and future value cells for individual validation
+          if (currentCell) {
+            const currentId = `metricCurrent_${metricName.replace(/\W+/g, '')}`;
+            currentCell.id = currentId;
+            
+            // Create specific explanation for current value
+            let currentExplanation = '';
+            if (metricName.includes('Monthly Bill')) {
+              currentExplanation = window.mathExplanations.billBreakdown.totalBill(
+                appState.currentResults?.baseRateCost || 0,
+                appState.currentResults?.addonFeeCost || 0,
+                appState.currentResults?.tierBreakdown?.map(t => t.cost) || [],
+                appState.currentResults?.totalBill || 0
+              );
+            } else if (metricName.includes('Affordability')) {
+              const monthlyMHI = appState.medianIncome / 12;
+              const affordabilityPercentage = appState.currentResults?.affordabilityMHI ? (appState.currentResults.affordabilityMHI * 100) : 0;
+              currentExplanation = window.mathExplanations.affordability.percentOfMHI(
+                appState.currentResults?.totalBill || 0,
+                appState.medianIncome,
+                monthlyMHI,
+                affordabilityPercentage
+              );
+            } else if (metricName.includes('Annual System Revenue')) {
+              currentExplanation = window.mathExplanations.revenue.annualRevenue(
+                appState.currentResults?.totalBill || 0,
+                appState.customerCount,
+                appState.currentResults?.annualRevenue || 0
+              );
+            }
+            
+            if (currentExplanation) {
+              updateElementTooltip(currentId, currentExplanation);
+            }
+          }
+          
+          if (futureCell) {
+            const futureId = `metricFuture_${metricName.replace(/\W+/g, '')}`;
+            futureCell.id = futureId;
+            
+            // Create specific explanation for future value
+            let futureExplanation = '';
+            if (metricName.includes('Monthly Bill')) {
+              futureExplanation = window.mathExplanations.billBreakdown.totalBill(
+                appState.futureResults?.baseRateCost || 0,
+                appState.futureResults?.addonFeeCost || 0,
+                appState.futureResults?.tierBreakdown?.map(t => t.cost) || [],
+                appState.futureResults?.totalBill || 0
+              );
+            } else if (metricName.includes('Affordability')) {
+              const monthlyMHI = appState.medianIncome / 12;
+              const affordabilityPercentage = appState.futureResults?.affordabilityMHI ? (appState.futureResults.affordabilityMHI * 100) : 0;
+              futureExplanation = window.mathExplanations.affordability.percentOfMHI(
+                appState.futureResults?.totalBill || 0,
+                appState.medianIncome,
+                monthlyMHI,
+                affordabilityPercentage
+              );
+            } else if (metricName.includes('Annual System Revenue')) {
+              futureExplanation = window.mathExplanations.revenue.annualRevenue(
+                appState.futureResults?.totalBill || 0,
+                appState.customerCount,
+                appState.futureResults?.annualRevenue || 0
+              );
+            }
+            
+            if (futureExplanation) {
+              updateElementTooltip(futureId, futureExplanation);
+            }
+          }
+        }
+      });
+  }  
+  /**
+   * Updates math explanations for rate recommendations
+   */
+  function updateRateRecommendationsExplanations() {
+      if (!appState.recommendedRates) return;
+      
+      // Recommended Base Rate
+      updateElementTooltip('recommendedBaseRate', 
+                         window.mathExplanations.advisor.recommendedBaseRate(
+                             appState.recommendedRates.baseRate || 0,
+                             appState.currentBaseRate || 0,
+                             'Cost recovery optimization with affordability considerations'
+                         ));
+      
+      // Recommended Add-on Fee
+      updateElementTooltip('recommendedAddonFee', 
+                         window.mathExplanations.advisor.recommendedAddonFee(
+                             appState.recommendedRates.addonFee || 0,
+                             appState.currentAddonFee || 0,
+                             'Infrastructure replacement cost allocation'
+                         ));
+      
+      // Recommended Average Bill
+      const recommendedAvgBill = appState.recommendedRates.avgBill || 0;
+      updateElementTooltip('recommendedAvgBill', 
+                         window.mathExplanations.advisor.recommendedAvgBill(
+                             recommendedAvgBill,
+                             appState.avgMonthlyUsage || 0
+                         ));
+      
+      // Recommended Affordability
+      updateElementTooltip('recommendedAffordabilityMHI', 
+                         window.mathExplanations.advisor.recommendedAffordabilityMHI(
+                             recommendedAvgBill,
+                             appState.medianIncome || 0
+                         ));
+      
+      // Recommended Tier Structure
+      if (appState.recommendedRates.tiers) {
+        appState.recommendedRates.tiers.forEach((tier, index) => {
+          // Tier limit explanation
+          const tierLimitId = `recommendedTier${index + 1}Limit`;
+          updateElementTooltip(tierLimitId, 
+                             window.mathExplanations.advisor.recommendedTierLimit(
+                                 tier.limit || 0,
+                                 index,
+                                 appState.futureTiers[index]?.limit || 0
+                             ));
+          
+          // Tier rate explanation
+          const tierRateId = `recommendedTier${index + 1}Rate`;
+          updateElementTooltip(tierRateId, 
+                             window.mathExplanations.advisor.recommendedTierRate(
+                                 tier.rate || 0,
+                                 index,
+                                 appState.futureTiers[index]?.rate || 0
+                             ));
+        });
+      }
+      
+      // Year-by-Year Financial Projection Table
+      if (appState.projectionResults?.years) {
+        appState.projectionResults.years.forEach((year, i) => {
+          const yearState = {
+            operatingCost: appState.projectionResults.operatingCosts?.[i] || 0,
+            debtService: appState.projectionResults.debtService?.[i] || 0,
+            infrastructureFunding: appState.projectionResults.infrastructureFunding?.[i] || 0,
+            revenueNeeds: appState.projectionResults.revenueNeeds?.[i] || 0,
+            revenue: appState.projectionResults.revenue?.[i] || 0,
+            reserveBalance: appState.projectionResults.reserves?.[i] || 0
+          };
+          
+          // Year column tooltip
+          updateElementTooltip(`projectionYear${year}`, 
+                             window.mathExplanations.financialProjection.yearlyProjection(year, yearState));
+          
+          // Individual cell tooltips for validation
+          updateElementTooltip(`projectionBaseRate_${year}`, 
+                             window.mathExplanations.financialProjection.transitionPlan(year));
+          
+          updateElementTooltip(`projectionAddonFee_${year}`, 
+                             window.mathExplanations.financialProjection.transitionPlan(year));
+          
+          // Revenue projection validation
+          updateElementTooltip(`projectionExpectedRevenue_${year}`, 
+                             window.mathExplanations.revenue.annualRevenue(
+                                 yearState.revenue / 12 / (appState.customerCount || 1), // Back-calculate monthly bill
+                                 appState.customerCount || 0,
+                                 yearState.revenue
+                             ));
+          
+          updateElementTooltip(`projectionNeededRevenue_${year}`, 
+                             window.mathExplanations.revenue.annualRevenueNeed(
+                                 yearState.operatingCost,
+                                 yearState.debtService,
+                                 yearState.infrastructureFunding,
+                                 0, // Grants handled separately
+                                 yearState.revenueNeeds
+                             ));
+          
+          updateElementTooltip(`projectionRevenueGap_${year}`, 
+                             window.mathExplanations.revenue.revenueGap(
+                                 yearState.revenue,
+                                 yearState.revenueNeeds,
+                                 yearState.revenue - yearState.revenueNeeds
+                             ));
+          
+          updateElementTooltip(`projectionReserveBalance_${year}`, 
+                             window.mathExplanations.financialProjection.transitionPlan(year));
+        });
+      }
+  }  
+  /**
+   * Updates math explanations for chart sections
+   */
+  function updateChartExplanations() {
+      // Make sure chart explanations exist
+      if (!window.mathExplanations || !window.mathExplanations.charts) return;
+      
+      // Add tooltip to the bill impact chart
+      const billImpactChart = document.getElementById('billImpactChart');
+      if (billImpactChart) {
+        const chartContainer = billImpactChart.closest('.chart-container') || billImpactChart.parentElement;
+        if (chartContainer && !chartContainer.id) {
+          chartContainer.id = 'billImpactChartContainer';
+        }
+        updateElementTooltip(chartContainer?.id || 'billImpactChart', 
+                            window.mathExplanations.charts.billImpact());
+      }
+      
+      // Add tooltip to the current revenue composition chart
+      const currentRevenueCompositionChart = document.getElementById('currentRevenueCompositionChart');
+      if (currentRevenueCompositionChart) {
+        const chartContainer = currentRevenueCompositionChart.closest('.chart-container') || currentRevenueCompositionChart.parentElement;
+        if (chartContainer && !chartContainer.id) {
+          chartContainer.id = 'currentRevenueCompositionChartContainer';
+        }
+        updateElementTooltip(chartContainer?.id || 'currentRevenueCompositionChart', 
+                            window.mathExplanations.charts.revenueComposition('current'));
+      }
+      
+      // Add tooltip to the future revenue composition chart
+      const futureRevenueCompositionChart = document.getElementById('futureRevenueCompositionChart');
+      if (futureRevenueCompositionChart) {
+        const chartContainer = futureRevenueCompositionChart.closest('.chart-container') || futureRevenueCompositionChart.parentElement;
+        if (chartContainer && !chartContainer.id) {
+          chartContainer.id = 'futureRevenueCompositionChartContainer';
+        }
+        updateElementTooltip(chartContainer?.id || 'futureRevenueCompositionChart', 
+                            window.mathExplanations.charts.revenueComposition('future'));
+      }
+      
+      // Add tooltips to the financial advisor charts
+      const financialProjectionsChart = document.getElementById('financialProjectionsChart');
+      if (financialProjectionsChart) {
+        const chartContainer = financialProjectionsChart.closest('.chart-container') || financialProjectionsChart.parentElement;
+        if (chartContainer && !chartContainer.id) {
+          chartContainer.id = 'financialProjectionsChartContainer';
+        }
+        updateElementTooltip(chartContainer?.id || 'financialProjectionsChart', 
+                            window.mathExplanations.charts.financialProjections());
+      }
+      
+      const rateStructureChart = document.getElementById('rateStructureChart');
+      if (rateStructureChart) {
+        const chartContainer = rateStructureChart.closest('.chart-container') || rateStructureChart.parentElement;
+        if (chartContainer && !chartContainer.id) {
+          chartContainer.id = 'rateStructureChartContainer';
+        }
+        updateElementTooltip(chartContainer?.id || 'rateStructureChart', 
+                            window.mathExplanations.charts.rateStructure());
+      }
+      
+      const affordabilityAnalysisChart = document.getElementById('affordabilityAnalysisChart');
+      if (affordabilityAnalysisChart) {
+        const chartContainer = affordabilityAnalysisChart.closest('.chart-container') || affordabilityAnalysisChart.parentElement;
+        if (chartContainer && !chartContainer.id) {
+          chartContainer.id = 'affordabilityAnalysisChartContainer';
+        }
+        updateElementTooltip(chartContainer?.id || 'affordabilityAnalysisChart', 
+                            window.mathExplanations.charts.affordabilityAnalysis());
+      }
+      
+      const waterLossImpactChart = document.getElementById('waterLossImpactChart');
+      if (waterLossImpactChart) {
+        const chartContainer = waterLossImpactChart.closest('.chart-container') || waterLossImpactChart.parentElement;
+        if (chartContainer && !chartContainer.id) {
+          chartContainer.id = 'waterLossImpactChartContainer';
+        }
+        updateElementTooltip(chartContainer?.id || 'waterLossImpactChart', 
+                            window.mathExplanations.charts.waterLossImpact());
+      }
+  }});
+// Add these to show-math.js:
+function updateProjectionExplanations() {
+  if (!appState.projection) return;
+  
+  appState.projection.forEach((yearData, i) => {
+    updateElementTooltip(`projectionYear${yearData.year}`, 
+      window.mathExplanations.projection.yearlyData(yearData));
+    
+    updateElementTooltip(`projectionRevenue${yearData.year}`, 
+      window.mathExplanations.projection.revenueValidation(yearData));
+  });
+}
+
+function updateRateRecommendationExplanations() {
+  if (!appState.rateRecommendations) return;
+  
+  // Optimal rates validation
+  updateElementTooltip('optimalBaseRate', 
+    window.mathExplanations.recommendations.optimalBaseRate(
+      appState.rateRecommendations.optimalRates.baseRate));
+  
+  // Financial projection validation
+  appState.rateRecommendations.financialProjection.forEach((yearData, i) => {
+    updateElementTooltip(`recommendationYear${yearData.year}`, 
+      window.mathExplanations.recommendations.yearlyTransition(yearData));
+  });
+}

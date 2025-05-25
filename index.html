@@ -84,7 +84,7 @@
               title="Collapse or expand all input sections"
             >
               <i class="bi bi-arrows-collapse"></i>
-              <span class="d-none d-lg-inline">Collapse</span>
+              <span class="d-none d-lg-inline">Collapse Inputs</span>
             </button>
 
             <div class="btn-group btn-group-sm">
@@ -97,7 +97,6 @@
                 <span class="d-none d-lg-inline">Export</span>
               </button>
               <button
-                hidden
                 id="importBtn"
                 class="btn btn-outline-light"
                 title="Import data from CSV"
@@ -119,7 +118,7 @@
               title="Show or hide calculation details"
             >
               <i class="bi bi-calculator"></i>
-              <span class="d-none d-lg-inline">Math</span>
+              <span class="d-none d-lg-inline">Math Mode</span>
             </button>
 
             <button
@@ -154,8 +153,13 @@
     </header>
     <main class="container-fluid">
       <div class="container-fluid" id="inputs-section">
-        <h2 class="mb-3">Input Parameters</h2>
-        <div class="card mb-4">
+<div class="card mb-4">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h3 class="card-title mb-0">
+      <i class="bi bi-sliders2-vertical me-2"></i>Input Parameters
+    </h3>
+  </div>
+       <div class="card mb-4">
           <div
             class="card-header bg-light d-flex justify-content-between align-items-center"
             data-bs-toggle="collapse"
@@ -281,7 +285,7 @@
                       value="0"
                     />
                   </div>
-                  <div class="mb-3">
+                  <div class="mb-3" hidden>
                     <label class="form-label"
                       >Compare Bills at Usage Levels (gallons/month)</label
                     >
@@ -376,10 +380,6 @@
                       min="0"
                       value="20"
                     />
-                    <small class="form-text text-muted"
-                      >How many more years your existing debt payments will
-                      continue</small
-                    >
                   </div>
                   <div class="mb-3">
                     <label for="infrastructureCost" class="form-label"
@@ -470,9 +470,7 @@
                       value="0"
                     />
                   </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="mb-3">
+                                    <div class="mb-3">
                     <label for="interestAdjustmentSlider" class="form-label"
                       >Annual Interest Rate Adjustment:
                       <span id="interestAdjustmentValue">0</span>%</label
@@ -487,10 +485,13 @@
                       value="0"
                     />
                   </div>
+                </div>
+                <div class="col-md-6">
+
+
                   <div class="mb-3">
                     <label for="targetReserve" class="form-label"
-                      >Target Reserve Amount ($)</label
-                    >
+                      >Target Reserve Amount ($)</label                    >
                     <input
                       type="number"
                       class="form-control"
@@ -513,6 +514,14 @@
                       value="0"
                     />
                   </div>
+                                      <div class="form-check mb-3">
+    <input class="form-check-input" type="checkbox" id="includeReserveCheckbox" 
+           checked
+           title="When checked, infrastructure reserve contributions are included in required revenue needs. Unchecking will show a more achievable short-term revenue target.">
+    <label class="form-check-label" for="includeReserveCheckbox">
+      Include infrastructure reserve in What-If revenue needs calculations
+    </label>
+  </div>
                 </div>
               </div>
             </div>
@@ -743,7 +752,7 @@
                       </div>
                       <div class="col-md-2">
                         <button class="btn btn-danger mt-4 remove-project">
-                          F Remove
+                          Remove
                         </button>
                       </div>
                     </div>
@@ -1057,18 +1066,9 @@
                   <span class="badge bg-info ms-2">What-If Scenario</span>
                   Rate Structure
                 </h3>
-                <button class="btn btn-sm btn-link p-0 m-0" type="button">
-                  <i class="bi bi-chevron-down"></i>
-                </button>
-                <div class="d-flex justify-content-end mb-3">
-                  <button
-                    id="copyFromAdvisor"
-                    class="btn btn-outline-primary btn-sm"
-                    type="button"
-                    disabled
-                  >
-                    <i class="bi bi-arrow-up-square me-1"></i>Copy Financial
-                    Advisor Rates
+                <div class="d-flex align-items-center">
+                  <button class="btn btn-sm btn-link p-0 m-0" type="button">
+                    <i class="bi bi-chevron-down"></i>
                   </button>
                 </div>
               </div>
@@ -1288,42 +1288,53 @@
             </div>
           </div>
         </div>
-      </div>
-      <div class="container-fluid" id="results-section">
-        <style>
-          @media (min-width: 992px) {
-            .analysis-grid-container {
-              display: grid;
-              grid-template-columns: 1fr 1fr;
-              grid-gap: 20px;
-            }
-            .analysis-grid-container > .card {
-              margin-bottom: 20px; /* This was likely intended for direct children, but can be kept or adjusted */
-              height: 100%; /* Makes cards in the grid take full height of their row */
-            }
+      </div></div>
+     <div class="container-fluid" id="results-section">
+  <!-- Remove the standalone h2 and replace with card structure -->
+  <div class="card mb-4">
+<div class="card-header bg-light d-flex justify-content-between align-items-center">
+  <h3 class="card-title mb-0">
+    <i class="bi bi-graph-up me-2"></i>What-If Comparison Results
+  </h3>
+      <!-- Optional: Add collapse functionality like other sections -->
+      <!-- <i class="bi bi-chevron-down toggle-icon"></i> -->
+    </div>
+    <!-- Optional: If you want collapsible functionality -->
+    <!-- <div class="collapse show" id="resultsCollapse"> -->
+    <div class="card-body p-0">
+      <!-- Move the existing style block and analysis-grid-container inside here -->
+      <style>
+        @media (min-width: 992px) {
+          .analysis-grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-gap: 20px;
+            padding: 1rem;
           }
-          .chart-container {
-            /* Added for consistent chart styling */
-            position: relative;
-            margin: auto;
-            /* height: 40vh; */ /* Consider responsive height or aspect ratio */
-            /* width: 80vw;  */ /* Consider responsive width or max-width */
-            max-width: 100%;
+          .analysis-grid-container > .card {
+            margin-bottom: 20px;
+            height: 100%;
           }
-          .chart-description {
-            font-size: 0.875rem;
-            color: #6c757d; /* Bootstrap's text-muted color */
-            text-align: center;
-            margin-top: 0.5rem;
-          }
-        </style>
-
-        <h2 class="mb-4">What-If Comparison Results</h2>
+        }
+        .chart-container {
+          position: relative;
+          margin: auto;
+          max-width: 100%;
+        }
+        .chart-description {
+          font-size: 0.875rem;
+          color: #6c757d;
+          text-align: center;
+          margin-top: 0.5rem;
+        }
+      </style>
 
         <div class="analysis-grid-container">
           <div class="card mb-6">
             <div class="card-header bg-light">
-              <h3 class="card-title mb-0">Current Tier Structure Analysis</h3>
+              <h3 class="card-title mb-0">
+                Current Tier Structure Analysis (Year 0)
+              </h3>
             </div>
             <div class="card-body">
               <h4>Monthly Estimated Bill Breakdown</h4>
@@ -1398,6 +1409,22 @@
                     Annual Revenue Need:
                     <span id="currentAnnualRevenueNeed">$0</span>
                   </p>
+                  <p>Revenue Gap: <span id="currentRevenueGap">$0</span></p>
+                  <div class="progress mb-3">
+                    <div
+                      id="currentRevenueBar"
+                      class="progress-bar"
+                      role="progressbar"
+                      style="width: 0%"
+                      aria-valuenow="0"
+                      aria-valuemin="0"
+                      aria-valuemax="100"
+                    ></div>
+                  </div>
+                  <p>
+                    Revenue meets
+                    <span id="currentRevenuePercentage">0%</span> of needs
+                  </p>
                   <div class="card mb-3">
                     <div class="card-header bg-light">
                       <h5 class="mb-0">Financial Planning Factors</h5>
@@ -1427,50 +1454,11 @@
                       </table>
                     </div>
                   </div>
-                  <p>Revenue Gap: <span id="currentRevenueGap">$0</span></p>
-                  <div class="progress mb-3">
-                    <div
-                      id="currentRevenueBar"
-                      class="progress-bar"
-                      role="progressbar"
-                      style="width: 0%"
-                      aria-valuenow="0"
-                      aria-valuemin="0"
-                      aria-valuemax="100"
-                    ></div>
-                  </div>
-                  <p>
-                    Revenue meets
-                    <span id="currentRevenuePercentage">0%</span> of needs
-                  </p>
                 </div>
               </div>
               <!-- Add Water Loss & Poverty Impact Analysis section here -->
-              <h4>Water Loss & Poverty Impact Analysis</h4>
+              <h4>Poverty Impact & Water Loss Analysis</h4>
               <div class="row mb-4">
-                <div class="col-md-6">
-                  <div class="card">
-                    <div class="card-header bg-light">
-                      <h5 class="mb-0">Water Loss Impact</h5>
-                    </div>
-                    <div class="card-body">
-                      <table class="table table-sm">
-                        <tr>
-                          <th>Lost Water Volume (gal/year):</th>
-                          <td id="currentWaterLossVolume">0</td>
-                        </tr>
-                        <tr>
-                          <th>Financial Impact:</th>
-                          <td id="currentWaterLossFinancial">$0.00</td>
-                        </tr>
-                        <tr>
-                          <th>% of Annual Revenue:</th>
-                          <td id="currentWaterLossPercent">0%</td>
-                        </tr>
-                      </table>
-                    </div>
-                  </div>
-                </div>
                 <div class="col-md-6">
                   <div class="card">
                     <div class="card-header bg-light">
@@ -1500,6 +1488,29 @@
                     </div>
                   </div>
                 </div>
+                <div class="col-md-6">
+                  <div class="card">
+                    <div class="card-header bg-light">
+                      <h5 class="mb-0">Water Loss Impact</h5>
+                    </div>
+                    <div class="card-body">
+                      <table class="table table-sm">
+                        <tr>
+                          <th>Lost Water Volume (gal/year):</th>
+                          <td id="currentWaterLossVolume">0</td>
+                        </tr>
+                        <tr>
+                          <th>Financial Impact:</th>
+                          <td id="currentWaterLossFinancial">$0.00</td>
+                        </tr>
+                        <tr>
+                          <th>% of Annual Revenue:</th>
+                          <td id="currentWaterLossPercent">0%</td>
+                        </tr>
+                      </table>
+                    </div>
+                  </div>
+                </div>
               </div>
               <h4>Bill Comparison at Different Usage Levels</h4>
               <div class="table-responsive">
@@ -1523,7 +1534,7 @@
               <h3 class="card-title mb-0">
                 <span class="badge bg-info">What-If Scenario</span>
 
-                Tier Structure Analysis
+                Tier Structure Analysis (Year 1)
               </h3>
             </div>
             <div class="card-body">
@@ -1599,6 +1610,22 @@
                     Annual Revenue Need:
                     <span id="futureAnnualRevenueNeed">$0</span>
                   </p>
+                  <p>Revenue Gap: <span id="futureRevenueGap">$0</span></p>
+                  <div class="progress mb-3">
+                    <div
+                      id="futureRevenueBar"
+                      class="progress-bar"
+                      role="progressbar"
+                      style="width: 0%"
+                      aria-valuenow="0"
+                      aria-valuemin="0"
+                      aria-valuemax="100"
+                    ></div>
+                  </div>
+                  <p>
+                    Revenue meets
+                    <span id="futureRevenuePercentage">0%</span> of needs
+                  </p>
                   <div class="card mb-3">
                     <div class="card-header bg-light">
                       <h5 class="mb-0">Financial Planning Factors</h5>
@@ -1628,50 +1655,11 @@
                       </table>
                     </div>
                   </div>
-                  <p>Revenue Gap: <span id="futureRevenueGap">$0</span></p>
-                  <div class="progress mb-3">
-                    <div
-                      id="futureRevenueBar"
-                      class="progress-bar"
-                      role="progressbar"
-                      style="width: 0%"
-                      aria-valuenow="0"
-                      aria-valuemin="0"
-                      aria-valuemax="100"
-                    ></div>
-                  </div>
-                  <p>
-                    Revenue meets
-                    <span id="futureRevenuePercentage">0%</span> of needs
-                  </p>
                 </div>
               </div>
               <!-- Add Water Loss & Poverty Impact Analysis section here -->
-              <h4>Water Loss & Poverty Impact Analysis</h4>
+              <h4>Poverty Impact & Water Loss Analysis</h4>
               <div class="row mb-4">
-                <div class="col-md-6">
-                  <div class="card">
-                    <div class="card-header bg-light">
-                      <h5 class="mb-0">Water Loss Impact</h5>
-                    </div>
-                    <div class="card-body">
-                      <table class="table table-sm">
-                        <tr>
-                          <th>Lost Water Volume (gal/year):</th>
-                          <td id="futureWaterLossVolume">0</td>
-                        </tr>
-                        <tr>
-                          <th>Financial Impact:</th>
-                          <td id="futureWaterLossFinancial">$0.00</td>
-                        </tr>
-                        <tr>
-                          <th>% of Annual Revenue:</th>
-                          <td id="futureWaterLossPercent">0%</td>
-                        </tr>
-                      </table>
-                    </div>
-                  </div>
-                </div>
                 <div class="col-md-6">
                   <div class="card">
                     <div class="card-header bg-light">
@@ -1701,6 +1689,29 @@
                     </div>
                   </div>
                 </div>
+                <div class="col-md-6">
+                  <div class="card">
+                    <div class="card-header bg-light">
+                      <h5 class="mb-0">Water Loss Impact</h5>
+                    </div>
+                    <div class="card-body">
+                      <table class="table table-sm">
+                        <tr>
+                          <th>Lost Water Volume (gal/year):</th>
+                          <td id="futureWaterLossVolume">0</td>
+                        </tr>
+                        <tr>
+                          <th>Financial Impact:</th>
+                          <td id="futureWaterLossFinancial">$0.00</td>
+                        </tr>
+                        <tr>
+                          <th>% of Annual Revenue:</th>
+                          <td id="futureWaterLossPercent">0%</td>
+                        </tr>
+                      </table>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <h4>Bill Comparison at Different Usage Levels</h4>
@@ -1721,22 +1732,26 @@
           </div>
         </div>
         <!-- Add this after the existing analysis-grid-container div -->
-        <div class="row mb-4">
-          <div class="card">
-            <div class="card-header bg-light">
-              <h3 class="card-title mb-0">Bill Impact by Usage Level</h3>
-            </div>
-            <div class="card-body">
-              <div class="chart-container">
-                <canvas id="billImpactChart" height="300"></canvas>
-              </div>
-              <div class="chart-description">
-                This chart shows how the proposed rate structure affects bills
-                for different levels of usage compared to current rates.
-              </div>
-            </div>
-          </div>
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header bg-light d-flex align-items-center">
+        <h3 class="card-title mb-0">
+          <i class="bi bi-bar-chart-steps me-2"></i>Bill Impact by Usage Level
+        </h3>
+      </div>
+      <div class="card-body">
+        <div class="chart-container">
+          <canvas id="billImpactChart" height="300"></canvas>
         </div>
+        <div class="chart-description">
+          This chart shows how the proposed rate structure affects bills
+          for different levels of usage compared to current rates.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
         <div class="row mb-4">
           <div class="col-md-6">
             <div class="card">
@@ -1777,7 +1792,9 @@
         </div>
         <div class="card mb-4">
           <div class="card-header bg-light">
-            <h3 class="card-title mb-0">Financial Health & Affordability</h3>
+            <h3 class="card-title mb-0">
+              Financial Health & Affordability Comparison (Current vs. What-If)
+            </h3>
           </div>
           <div class="card-body">
             <div class="table-responsive">
@@ -2060,13 +2077,14 @@
             <div id="recommendationsSection" class="d-none">
               <h3 class="mt-2 mb-3">Rate Recommendations</h3>
 
-              <div class="card mb-4">
+              <div class="card mb-4" id="recommendationsCard">
                 <div class="card-header bg-primary text-white">
                   <h4 class="card-title mb-0">
                     Recommended Optimal Rate Structure
                   </h4>
+                  
                 </div>
-                <div class="card-body">
+                <div class="card-body" id="recommendationsCardBody">
                   <div class="alert alert-info">
                     <i class="bi bi-lightbulb-fill me-2"></i>
                     This is the recommended optimal rate structure that balances
@@ -2120,6 +2138,14 @@
                     </thead>
                     <tbody id="recommendedTierRows"></tbody>
                   </table>
+                                                    <button
+                    id="copyFromAdvisor"
+                    class="btn btn-outline-primary btn-sm me-2"
+                    type="button"
+                    disabled
+                  >
+                    <i class="bi bi-arrow-up-square me-1"></i>Copy Advisor Rates To What-If Structure Above
+                  </button>
                 </div>
               </div>
 
@@ -2146,7 +2172,7 @@
                         <tr>
                           <th rowspan="2">Year</th>
                           <th colspan="2">Fixed Charges</th>
-                          <th colspan="4">Tier Structure</th>
+                          <th colspan="7">Tier Structure</th>
                           <th colspan="3">Financial Planning</th>
                           <th colspan="3">Revenue</th>
                           <th rowspan="2">Reserve Balance</th>
@@ -2159,6 +2185,9 @@
                           <th>Limit</th>
                           <th>Tier 2 Rate</th>
                           <th>Limit</th>
+                            <th>Tier 3 Rate</th>
+  <th>Limit</th>
+  <th>Tier 4 Rate</th>
                           <th>Capital Projects</th>
                           <th>Grants</th>
                           <th>New Loans</th>
@@ -2648,9 +2677,7 @@
     >
       <i class="bi bi-arrow-up text-primary"></i>
     </button>
-
-    <input type="file" id="importCSV" accept=".csv" style="display: none" />
-
+    <script src="js/math-explanations.js"></script>
     <script src="js/app.js"></script>
     <script src="js/inputs.js"></script>
     <script src="js/scenarios.js"></script>

@@ -145,14 +145,14 @@ function initializeSliders() {
             }
             valueSpan.textContent = displayValue;
             
-            // Update appState with the slider value
-            appState[this.id] = parseFloat(this.value);
+            // Update appState with the slider value - FIXED to handle tier properties
+            updateAppStateFromSlider(this.id, parseFloat(this.value));
         });
         
         // Add change event to update calculations
         rangeInput.addEventListener('change', function() {
-            // Ensure appState has the latest value
-            appState[this.id] = parseFloat(this.value);
+            // Ensure appState has the latest value - FIXED to handle tier properties
+            updateAppStateFromSlider(this.id, parseFloat(this.value));
             
             // Call calculateAll to update all calculations
             if (typeof calculateAll === 'function') {
@@ -233,6 +233,17 @@ function initializeSliders() {
         
         // Then, remove parenthetical value displays like "(5%)" that might exist
         labelElement.innerHTML = labelElement.innerHTML.replace(valueDisplayRegex, '');
+        
+        // CRITICAL: Check if the element still exists after the innerHTML replacements
+        // This is necessary because the above replacements might have removed it from the DOM
+        const currentValueElement = existingValueId ? document.getElementById(existingValueId) : null;
+        if (!currentValueElement && existingValueId) {
+            // console.log(`Re-creating element with ID '${existingValueId}' which was removed during label cleanup`);
+            const newValueElement = document.createElement('span');
+            newValueElement.id = existingValueId;
+            newValueElement.style.display = 'none'; // Hidden but available for app.js
+            document.body.appendChild(newValueElement);
+        }
         
         // Create a value display span if it doesn't already exist
         let valueSpan = document.getElementById(`${slider.id}Display`);
@@ -320,7 +331,7 @@ function initializeSliders() {
                 originalValueElement.textContent = this.value; // Use raw value without formatting
             }
             
-            // Update appState with the slider value - use mapping for special cases
+            // Update appState with the slider value - FIXED to handle tier properties
             const sliderIdMap = {
                 'belowPovertySlider': 'belowPovertyPercent',
                 'waterLossSlider': 'waterLossPercent',
@@ -333,12 +344,12 @@ function initializeSliders() {
             };
             
             const stateProperty = sliderIdMap[this.id] || this.id;
-            appState[stateProperty] = parseFloat(this.value);
+            updateAppStateFromSlider(stateProperty, parseFloat(this.value));
         });
         
         // Add change event to update calculations
         input.addEventListener('change', function() {
-            // First update appState with the slider value
+            // First update appState with the slider value - FIXED to handle tier properties
             const sliderIdMap = {
                 'belowPovertySlider': 'belowPovertyPercent',
                 'waterLossSlider': 'waterLossPercent',
@@ -351,7 +362,7 @@ function initializeSliders() {
             };
             
             const stateProperty = sliderIdMap[this.id] || this.id;
-            appState[stateProperty] = parseFloat(this.value);
+            updateAppStateFromSlider(stateProperty, parseFloat(this.value));
             
             // Then trigger recalculation
             if (typeof calculateAll === 'function') {
@@ -407,6 +418,7 @@ function initializeSliders() {
             if (parseInt(tier1.value) >= parseInt(tier2.value)) {
                 tier2.value = parseInt(tier1.value) + 100;
                 tier2.dispatchEvent(new Event('input'));
+                updateAppStateFromTierValidation();
             }
         });
         
@@ -416,12 +428,14 @@ function initializeSliders() {
             if (parseInt(tier2.value) <= parseInt(tier1.value)) {
                 tier2.value = parseInt(tier1.value) + 100;
                 tier2.dispatchEvent(new Event('input'));
+                updateAppStateFromTierValidation();
             }
             
             // Ensure tier2 < tier3
             if (parseInt(tier2.value) >= parseInt(tier3.value)) {
                 tier3.value = parseInt(tier2.value) + 100;
                 tier3.dispatchEvent(new Event('input'));
+                updateAppStateFromTierValidation();
             }
         });
         
@@ -431,6 +445,7 @@ function initializeSliders() {
             if (parseInt(tier3.value) <= parseInt(tier2.value)) {
                 tier3.value = parseInt(tier2.value) + 100;
                 tier3.dispatchEvent(new Event('input'));
+                updateAppStateFromTierValidation();
             }
         });
     }
@@ -447,6 +462,7 @@ function initializeSliders() {
             if (parseFloat(tier1Rate.value) >= parseFloat(tier2Rate.value)) {
                 tier2Rate.value = (parseFloat(tier1Rate.value) + 0.1).toFixed(1);
                 tier2Rate.dispatchEvent(new Event('input'));
+                updateAppStateFromTierValidation();
             }
         });
         
@@ -456,12 +472,14 @@ function initializeSliders() {
             if (parseFloat(tier2Rate.value) <= parseFloat(tier1Rate.value)) {
                 tier2Rate.value = (parseFloat(tier1Rate.value) + 0.1).toFixed(1);
                 tier2Rate.dispatchEvent(new Event('input'));
+                updateAppStateFromTierValidation();
             }
             
             // Ensure tier2Rate < tier3Rate
             if (parseFloat(tier2Rate.value) >= parseFloat(tier3Rate.value)) {
                 tier3Rate.value = (parseFloat(tier2Rate.value) + 0.1).toFixed(1);
                 tier3Rate.dispatchEvent(new Event('input'));
+                updateAppStateFromTierValidation();
             }
         });
         
@@ -471,12 +489,14 @@ function initializeSliders() {
             if (parseFloat(tier3Rate.value) <= parseFloat(tier2Rate.value)) {
                 tier3Rate.value = (parseFloat(tier2Rate.value) + 0.1).toFixed(1);
                 tier3Rate.dispatchEvent(new Event('input'));
+                updateAppStateFromTierValidation();
             }
             
             // Ensure tier3Rate < tier4Rate
             if (parseFloat(tier3Rate.value) >= parseFloat(tier4Rate.value)) {
                 tier4Rate.value = (parseFloat(tier3Rate.value) + 0.1).toFixed(1);
                 tier4Rate.dispatchEvent(new Event('input'));
+                updateAppStateFromTierValidation();
             }
         });
         
@@ -486,9 +506,66 @@ function initializeSliders() {
             if (parseFloat(tier4Rate.value) <= parseFloat(tier3Rate.value)) {
                 tier4Rate.value = (parseFloat(tier3Rate.value) + 0.1).toFixed(1);
                 tier4Rate.dispatchEvent(new Event('input'));
+                updateAppStateFromTierValidation();
             }
-        });    }
+        });    
+    }
     
     // Call the tier validation setup after sliders are created
     setTimeout(setupTierValidation, 100);
+    
+}
+
+/**
+ * Updates the appState object with slider values, properly handling tier properties
+ * @param {string} fieldId - The ID of the field or property name in appState
+ * @param {number} value - The new value
+ */
+function updateAppStateFromSlider(fieldId, value) {
+    // Check if this is a tier-related field
+    const tierMatch = fieldId.match(/^(current|future)Tier([1-4])(Limit|Rate)$/);
+    
+    if (tierMatch) {
+        const [_, tierType, tierNumber, propertyType] = tierMatch;
+        const tierIndex = parseInt(tierNumber) - 1;
+        const tiersArray = tierType === 'current' ? appState.currentTiers : appState.futureTiers;
+        
+        // Make sure the tier exists in the array
+        if (tierIndex >= 0 && tierIndex < tiersArray.length) {
+            // Update the appropriate property (limit or rate)
+            const property = propertyType.toLowerCase();
+            tiersArray[tierIndex][property] = value;
+        }
+    } else {
+        // For non-tier fields, use the existing approach
+        appState[fieldId] = value;
+    }
+}
+
+function updateAppStateFromTierValidation() {
+    // Update current tiers in appState
+    for (let i = 1; i <= 4; i++) {
+        const tierLimit = document.getElementById(`currentTier${i}Limit`);
+        const tierRate = document.getElementById(`currentTier${i}Rate`);
+        
+        if (tierLimit) {
+            appState.currentTiers[i-1].limit = parseFloat(tierLimit.value) || 0;
+        }
+        if (tierRate) {
+            appState.currentTiers[i-1].rate = parseFloat(tierRate.value) || 0;
+        }
+    }
+    
+    // Update future tiers in appState
+    for (let i = 1; i <= 4; i++) {
+        const tierLimit = document.getElementById(`futureTier${i}Limit`);
+        const tierRate = document.getElementById(`futureTier${i}Rate`);
+        
+        if (tierLimit) {
+            appState.futureTiers[i-1].limit = parseFloat(tierLimit.value) || 0;
+        }
+        if (tierRate) {
+            appState.futureTiers[i-1].rate = parseFloat(tierRate.value) || 0;
+        }
+    }
 }

@@ -5,7 +5,7 @@
  * This file handles:
  * - Input validation
  * - Input processing
- * - Export/import data formatting
+ * - Data formatting
  */
 
 /**
@@ -341,9 +341,9 @@ function importFromCSV(csvData) {
             }
         });
         
-        // Update UI with imported data
-        updateUIFromAppState();
-        
+        // // Update UI with imported data
+        // updateUIFromAppState();
+        syncUIWithAppState();
         // Recalculate and update displays
         calculateAll();
         
@@ -609,109 +609,311 @@ function resetAppState() {
 }
 
 /**
- * Update UI elements with values from appState
+ * Synchronize all UI elements with current appState values
+ * This function combines the functionality of updateUIFromAppState and updateInputsFromState
  */
-function updateUIFromAppState() {
-    // Community Information
-    document.getElementById('communityName').value = appState.communityName;
-    document.getElementById('medianIncome').value = appState.medianIncome;
-    document.getElementById('povertyIncome').value = appState.povertyIncome;
-    document.getElementById('belowPovertySlider').value = appState.belowPovertyPercent;
-    document.getElementById('belowPovertyValue').textContent = appState.belowPovertyPercent;
+function syncUIWithAppState() {
+    // Clear existing dynamic entries
+    clearDynamicEntries();
     
-    // System Information
-    document.getElementById('customerCount').value = appState.customerCount;
-    document.getElementById('avgMonthlyUsage').value = appState.avgMonthlyUsage;
-    document.getElementById('waterLossSlider').value = appState.waterLossPercent;
-    document.getElementById('waterLossValue').textContent = appState.waterLossPercent;
+    // ----- Community Information -----
+    safelySetInputValue('communityName', appState.communityName);
+    safelySetInputValue('medianIncome', appState.medianIncome);
+    safelySetInputValue('povertyIncome', appState.povertyIncome);
+    safelySetInputValue('belowPovertySlider', appState.belowPovertyPercent);
+    safelySetTextContent('belowPovertyValue', appState.belowPovertyPercent);
     
-    // Compare usage checkboxes
-    document.getElementById('compareUsage2000').checked = appState.compareUsageLevels.includes(2000);
-    document.getElementById('compareUsage5000').checked = appState.compareUsageLevels.includes(5000);
-    document.getElementById('compareUsage10000').checked = appState.compareUsageLevels.includes(10000);
+    // ----- System Information -----
+    safelySetInputValue('customerCount', appState.customerCount);
+    safelySetInputValue('avgMonthlyUsage', appState.avgMonthlyUsage);
+    safelySetInputValue('waterLossSlider', appState.waterLossPercent);
+    safelySetTextContent('waterLossValue', appState.waterLossPercent);
     
-    // Financial Information
-    document.getElementById('operatingCost').value = appState.operatingCost;
-    document.getElementById('debtPayments').value = appState.debtPayments;
-    document.getElementById('debtTerm').value = appState.debtTerm || 20; // Set debt term
-    document.getElementById('infrastructureCost').value = appState.infrastructureCost;
-    document.getElementById('interestRateSlider').value = appState.interestRate;
-    document.getElementById('interestRateValue').textContent = appState.interestRate;
-    document.getElementById('assetLifespanSlider').value = appState.assetLifespan;
-    document.getElementById('assetLifespanValue').textContent = appState.assetLifespan;
-    document.getElementById('projectionPeriod').value = appState.projectionPeriod;
-    document.getElementById('inflationRateSlider').value = appState.inflationRate;
-    document.getElementById('inflationRateValue').textContent = appState.inflationRate;
-    document.getElementById('customerGrowthSlider').value = appState.customerGrowthRate;
-    document.getElementById('customerGrowthValue').textContent = appState.customerGrowthRate;
-    document.getElementById('interestAdjustmentSlider').value = appState.interestAdjustment;
-    document.getElementById('interestAdjustmentValue').textContent = appState.interestAdjustment;
-    document.getElementById('targetReserve').value = appState.targetReserve;
-    document.getElementById('targetYearSlider').value = appState.targetYear;
-    document.getElementById('targetYearValue').textContent = appState.targetYear;
-      // Clear and rebuild loan, project, and grant entries
-    // Clear all containers first
-    document.getElementById('loansContainer').innerHTML = '';
-    document.getElementById('projectsContainer').innerHTML = '';
-    document.getElementById('grantsContainer').innerHTML = '';
+    // ----- Compare Usage Checkboxes -----
+    safelySetCheckboxState('compareUsage2000', (appState.compareUsageLevels || []).includes(2000));
+    safelySetCheckboxState('compareUsage5000', (appState.compareUsageLevels || []).includes(5000));
+    safelySetCheckboxState('compareUsage10000', (appState.compareUsageLevels || []).includes(10000));
     
-    // Add loan entries from appState
-    if (appState.loans.length > 0) {
+    // ----- Financial Information -----
+    safelySetInputValue('operatingCost', appState.operatingCost);
+    safelySetInputValue('debtPayments', appState.debtPayments);
+    safelySetInputValue('debtTerm', appState.debtTerm || 20); // Default to 20 if not set
+    safelySetInputValue('infrastructureCost', appState.infrastructureCost);
+    safelySetInputValue('interestRateSlider', appState.interestRate);
+    safelySetTextContent('interestRateValue', appState.interestRate);
+    safelySetInputValue('assetLifespanSlider', appState.assetLifespan);
+    safelySetTextContent('assetLifespanValue', appState.assetLifespan);
+    safelySetInputValue('projectionPeriod', appState.projectionPeriod);
+    safelySetInputValue('inflationRateSlider', appState.inflationRate);
+    safelySetTextContent('inflationRateValue', appState.inflationRate);
+    safelySetInputValue('customerGrowthSlider', appState.customerGrowthRate);
+    safelySetTextContent('customerGrowthValue', appState.customerGrowthRate);
+    safelySetInputValue('interestAdjustmentSlider', appState.interestAdjustment);
+    safelySetTextContent('interestAdjustmentValue', appState.interestAdjustment);
+    safelySetInputValue('targetReserve', appState.targetReserve);
+    safelySetInputValue('targetYearSlider', appState.targetYear);
+    safelySetTextContent('targetYearValue', appState.targetYear);
+    safelySetCheckboxState('includeReserveCheckbox', appState.includeReserveInRevenue);
+    // ----- Add Dynamic Entries -----
+    
+    // Add loan entries
+    if (appState.loans && appState.loans.length > 0) {
         appState.loans.forEach(loan => {
             addLoanEntry(loan);
         });
     } else {
-        // Add one empty loan entry
-        addLoanEntry();
+        // Ensure at least one empty loan entry is present
+        const loansContainer = document.getElementById('loansContainer');
+        if (loansContainer && loansContainer.children.length === 0) {
+            addLoanEntry();
+        }
     }
     
-    // Add project entries from appState
-    if (appState.projects.length > 0) {
+    // Add project entries
+    if (appState.projects && appState.projects.length > 0) {
         appState.projects.forEach(project => {
             addProjectEntry(project);
         });
     } else {
-        // Add one empty project entry
-        addProjectEntry();
+        // Ensure at least one empty project entry is present
+        const projectsContainer = document.getElementById('projectsContainer');
+        if (projectsContainer && projectsContainer.children.length === 0) {
+            addProjectEntry();
+        }
     }
     
-    // Add grant entries from appState
-    if (appState.grants.length > 0) {
+    // Add grant entries
+    if (appState.grants && appState.grants.length > 0) {
         appState.grants.forEach(grant => {
             addGrantEntry(grant);
         });
     } else {
-        // Add one empty grant entry
-        addGrantEntry();
+        // Ensure at least one empty grant entry is present
+        const grantsContainer = document.getElementById('grantsContainer');
+        if (grantsContainer && grantsContainer.children.length === 0) {
+            addGrantEntry();
+        }
     }
     
-    // Current Rate Structure
-    document.getElementById('currentBaseRate').value = appState.currentBaseRate;
-    document.getElementById('currentAddonFee').value = appState.currentAddonFee;
-      // Current Tiers
-    appState.currentTiers.forEach((tier, index) => {
-        const tierNum = index + 1;
-        document.getElementById(`currentTier${tierNum}Enabled`).checked = tier.enabled;
-        document.getElementById(`currentTier${tierNum}Limit`).value = tier.limit;
-        document.getElementById(`currentTier${tierNum}Limit`).disabled = !tier.enabled;
-        document.getElementById(`currentTier${tierNum}Rate`).value = tier.rate;
-        document.getElementById(`currentTier${tierNum}Rate`).disabled = !tier.enabled;
-    });
+    // ----- Current Rate Structure -----
+    safelySetInputValue('currentBaseRate', appState.currentBaseRate);
+    safelySetInputValue('currentAddonFee', appState.currentAddonFee);
     
-    // Future Rate Structure
-    document.getElementById('futureBaseRate').value = appState.futureBaseRate;
-    document.getElementById('futureAddonFee').value = appState.futureAddonFee;
+    // Current Tiers
+    for (let i = 1; i <= 4; i++) {
+        const tier = appState.currentTiers[i-1] || { enabled: false, limit: 0, rate: 0 };
+        safelySetCheckboxState(`currentTier${i}Enabled`, tier.enabled);
+        
+        const limitInput = document.getElementById(`currentTier${i}Limit`);
+        if (limitInput) {
+            limitInput.value = tier.limit || 0;
+            limitInput.disabled = !tier.enabled;
+        }
+        
+        const rateInput = document.getElementById(`currentTier${i}Rate`);
+        if (rateInput) {
+            rateInput.value = tier.rate || 0;
+            rateInput.disabled = !tier.enabled;
+        }
+    }
+    
+    // ----- What-If Rate Structure -----
+    safelySetInputValue('futureBaseRate', appState.futureBaseRate);
+    safelySetInputValue('futureAddonFee', appState.futureAddonFee);
     
     // Future Tiers
-    appState.futureTiers.forEach((tier, index) => {
-        const tierNum = index + 1;
-        document.getElementById(`futureTier${tierNum}Enabled`).checked = tier.enabled;
-        document.getElementById(`futureTier${tierNum}Limit`).value = tier.limit;
-        document.getElementById(`futureTier${tierNum}Limit`).disabled = !tier.enabled;
-        document.getElementById(`futureTier${tierNum}Rate`).value = tier.rate;
-        document.getElementById(`futureTier${tierNum}Rate`).disabled = !tier.enabled;
+    for (let i = 1; i <= 4; i++) {
+        const tier = appState.futureTiers[i-1] || { enabled: false, limit: 0, rate: 0 };
+        safelySetCheckboxState(`futureTier${i}Enabled`, tier.enabled);
+        
+        const limitInput = document.getElementById(`futureTier${i}Limit`);
+        if (limitInput) {
+            limitInput.value = tier.limit || 0;
+            limitInput.disabled = !tier.enabled;
+        }
+        
+        const rateInput = document.getElementById(`futureTier${i}Rate`);
+        if (rateInput) {
+            rateInput.value = tier.rate || 0;
+            rateInput.disabled = !tier.enabled;
+        }
+    }
+    
+    // ----- Recommendation Settings -----
+    if (appState.recommendationSettings) {
+        safelySetInputValue('epaThreshold', appState.recommendationSettings.EPA_AFFORDABILITY_THRESHOLD || 0.025);
+        safelySetInputValue('maxAnnualIncrease', appState.recommendationSettings.MAX_ANNUAL_INCREASE_PERCENT || 0.12);
+        safelySetInputValue('baseRatePercent', appState.recommendationSettings.IDEAL_BASE_RATE_PERCENT || 0.3);
+        safelySetInputValue('addonFeePercent', appState.recommendationSettings.IDEAL_ADDON_FEE_PERCENT || 0.2);
+        safelySetInputValue('volumetricPercent', appState.recommendationSettings.IDEAL_VOLUMETRIC_PERCENT || 0.5);
+        
+        // Tier multipliers
+        if (appState.recommendationSettings.TIER_MULTIPLIERS) {
+            for (let i = 1; i <= 4; i++) {
+                safelySetInputValue(`tier${i}Multiplier`, appState.recommendationSettings.TIER_MULTIPLIERS[i-1] || 1);
+            }
+        }
+        
+        // Tier limit factors
+        if (appState.recommendationSettings.TIER_LIMIT_FACTORS) {
+            for (let i = 1; i <= 3; i++) {
+                safelySetInputValue(`tier${i}LimitFactor`, appState.recommendationSettings.TIER_LIMIT_FACTORS[i-1] || 1);
+            }
+        }
+    }
+    
+    // ----- Update displays and handle custom sliders -----
+    updateSliderDisplays();
+    
+    // Trigger input events for custom slider components from slider-converter.js
+    document.querySelectorAll('input[type="range"]').forEach(slider => {
+        slider.dispatchEvent(new Event('input'));
     });
+    
+    // Update slider display values for both native and converted inputs
+    document.querySelectorAll('[id$="Display"]').forEach(displaySpan => {
+        const inputId = displaySpan.id.replace('Display', '');
+        const input = document.getElementById(inputId);
+        if (input) {
+            // Custom logic for formatting display values
+            let value = input.value;
+            if (input.classList.contains('slider-currency')) {
+                displaySpan.textContent = '$' + parseFloat(value).toFixed(2);
+            } else if (input.classList.contains('slider-percent')) {
+                displaySpan.textContent = parseFloat(value).toFixed(2) + '%';
+            } else {
+                displaySpan.textContent = value;
+            }
+        }
+    });
+    
+    // Helper functions for safer element access
+    function safelySetInputValue(id, value) {
+        const element = document.getElementById(id);
+        if (element) {
+            element.value = value ?? 0; // Use nullish coalescing to handle null/undefined
+        }
+    }
+    
+    function safelySetTextContent(id, value) {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = value ?? 0;
+        }
+    }
+    
+    function safelySetCheckboxState(id, checked) {
+        const element = document.getElementById(id);
+        if (element) {
+            element.checked = Boolean(checked);
+        }
+    }
 }
+
+// /**
+//  * Update UI elements with values from appState -- deprecated and replaced by syncUIWithAppState
+//  */
+// function updateUIFromAppState() {
+//     // Community Information
+//     document.getElementById('communityName').value = appState.communityName;
+//     document.getElementById('medianIncome').value = appState.medianIncome;
+//     document.getElementById('povertyIncome').value = appState.povertyIncome;
+//     document.getElementById('belowPovertySlider').value = appState.belowPovertyPercent;
+//     document.getElementById('belowPovertyValue').textContent = appState.belowPovertyPercent;
+    
+//     // System Information
+//     document.getElementById('customerCount').value = appState.customerCount;
+//     document.getElementById('avgMonthlyUsage').value = appState.avgMonthlyUsage;
+//     document.getElementById('waterLossSlider').value = appState.waterLossPercent;
+//     document.getElementById('waterLossValue').textContent = appState.waterLossPercent;
+    
+//     // Compare usage checkboxes
+//     document.getElementById('compareUsage2000').checked = appState.compareUsageLevels.includes(2000);
+//     document.getElementById('compareUsage5000').checked = appState.compareUsageLevels.includes(5000);
+//     document.getElementById('compareUsage10000').checked = appState.compareUsageLevels.includes(10000);
+    
+//     // Financial Information
+//     document.getElementById('operatingCost').value = appState.operatingCost;
+//     document.getElementById('debtPayments').value = appState.debtPayments;
+//     document.getElementById('debtTerm').value = appState.debtTerm || 20; // Set debt term
+//     document.getElementById('infrastructureCost').value = appState.infrastructureCost;
+//     document.getElementById('interestRateSlider').value = appState.interestRate;
+//     document.getElementById('interestRateValue').textContent = appState.interestRate;
+//     document.getElementById('assetLifespanSlider').value = appState.assetLifespan;
+//     document.getElementById('assetLifespanValue').textContent = appState.assetLifespan;
+//     document.getElementById('projectionPeriod').value = appState.projectionPeriod;
+//     document.getElementById('inflationRateSlider').value = appState.inflationRate;
+//     document.getElementById('inflationRateValue').textContent = appState.inflationRate;
+//     document.getElementById('customerGrowthSlider').value = appState.customerGrowthRate;
+//     document.getElementById('customerGrowthValue').textContent = appState.customerGrowthRate;
+//     document.getElementById('interestAdjustmentSlider').value = appState.interestAdjustment;
+//     document.getElementById('interestAdjustmentValue').textContent = appState.interestAdjustment;
+//     document.getElementById('targetReserve').value = appState.targetReserve;
+//     document.getElementById('targetYearSlider').value = appState.targetYear;
+//     document.getElementById('targetYearValue').textContent = appState.targetYear;
+//     // Clear and rebuild loan, project, and grant entries
+//     // Clear all containers first
+//     document.getElementById('loansContainer').innerHTML = '';
+//     document.getElementById('projectsContainer').innerHTML = '';
+//     document.getElementById('grantsContainer').innerHTML = '';
+    
+//     // Add loan entries from appState
+//     if (appState.loans.length > 0) {
+//         appState.loans.forEach(loan => {
+//             addLoanEntry(loan);
+//         });
+//     } else {
+//         // Add one empty loan entry
+//         addLoanEntry();
+//     }
+    
+//     // Add project entries from appState
+//     if (appState.projects.length > 0) {
+//         appState.projects.forEach(project => {
+//             addProjectEntry(project);
+//         });
+//     } else {
+//         // Add one empty project entry
+//         addProjectEntry();
+//     }
+    
+//     // Add grant entries from appState
+//     if (appState.grants.length > 0) {
+//         appState.grants.forEach(grant => {
+//             addGrantEntry(grant);
+//         });
+//     } else {
+//         // Add one empty grant entry
+//         addGrantEntry();
+//     }
+    
+//     // Current Rate Structure
+//     document.getElementById('currentBaseRate').value = appState.currentBaseRate;
+//     document.getElementById('currentAddonFee').value = appState.currentAddonFee;
+//       // Current Tiers
+//     appState.currentTiers.forEach((tier, index) => {
+//         const tierNum = index + 1;
+//         document.getElementById(`currentTier${tierNum}Enabled`).checked = tier.enabled;
+//         document.getElementById(`currentTier${tierNum}Limit`).value = tier.limit;
+//         document.getElementById(`currentTier${tierNum}Limit`).disabled = !tier.enabled;
+//         document.getElementById(`currentTier${tierNum}Rate`).value = tier.rate;
+//         document.getElementById(`currentTier${tierNum}Rate`).disabled = !tier.enabled;
+//     });
+    
+//     // Future Rate Structure
+//     document.getElementById('futureBaseRate').value = appState.futureBaseRate;
+//     document.getElementById('futureAddonFee').value = appState.futureAddonFee;
+    
+//     // Future Tiers
+//     appState.futureTiers.forEach((tier, index) => {
+//         const tierNum = index + 1;
+//         document.getElementById(`futureTier${tierNum}Enabled`).checked = tier.enabled;
+//         document.getElementById(`futureTier${tierNum}Limit`).value = tier.limit;
+//         document.getElementById(`futureTier${tierNum}Limit`).disabled = !tier.enabled;
+//         document.getElementById(`futureTier${tierNum}Rate`).value = tier.rate;
+//         document.getElementById(`futureTier${tierNum}Rate`).disabled = !tier.enabled;
+//     });
+// }
 
 /**
  * Format a number as currency
@@ -746,7 +948,10 @@ function formatPercentage(value) {
  * @returns {string} Formatted number string
  */
 function formatNumber(value) {
-    return new Intl.NumberFormat('en-US').format(value);
+    return new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+    }).format(value);
 }
 
 // Add event listener for the debtTerm input

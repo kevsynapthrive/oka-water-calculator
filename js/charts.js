@@ -802,18 +802,6 @@ function updatePovertyAffordabilityChart() {
 //     charts.debtProjectionChart.update();
 // }
 
-/**
- * Format currency values for display in charts
- * @param {number} value - The number to format as currency
- * @returns {string} Formatted currency string
- */
-function formatCurrency(value) {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        maximumFractionDigits: 0
-    }).format(value);
-}
 
 /**
  * Create a chart comparing current rates, manual future rates, and recommended rates
