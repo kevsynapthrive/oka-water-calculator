@@ -2374,13 +2374,36 @@
                 </div>
               </div>
             </div>
-            <div class="card mb-2">
-              <div class="card-header bg-primary text-white">
-                <h4 class="card-title mb-0">
-                  Year-by-Year Financial Projection
-                </h4>
-              </div>
-              <div class="card-body">
+<div class="card mb-2">
+  <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+    <h4 class="card-title mb-0">
+      Year-by-Year Financial Projection
+    </h4>
+    <!-- Replace tooltip button with collapsible toggle -->
+    <button class="btn btn-outline-light btn-sm algorithm-overview-btn" 
+            type="button"
+            data-bs-toggle="collapse" 
+            data-bs-target="#algorithmOverviewSection" 
+            aria-expanded="false" 
+            aria-controls="algorithmOverviewSection"
+            id="algorithmOverviewToggle"
+            style="display: none;">
+      <i class="bi bi-info-circle me-1"></i>
+      Algorithm Overview
+      <i class="bi bi-chevron-down ms-1 toggle-chevron"></i>
+    </button>
+  </div>
+  
+  <!-- Add the collapsible algorithm overview section -->
+  <div class="collapse" id="algorithmOverviewSection">
+    <div class="card-body bg-light border-bottom">
+      <div id="algorithmOverviewContent">
+        <!-- Content will be populated by JavaScript -->
+      </div>
+    </div>
+  </div>
+  
+  <div class="card-body">
                 <div class="alert alert-info">
                   <i class="bi bi-info-circle me-2"></i>
                   This projection shows the recommended transition from current

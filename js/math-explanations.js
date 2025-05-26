@@ -1601,5 +1601,423 @@ keyMetrics: {
           <p><u>Validation</u>: Uses pre-calculated water loss volume and rate structure impacts</p>
         </div>`;
       }
-  }};
+  },
+
+
+  // Rate Recommendations explanations (for financial projection table)
+  rateRecommendations: {
+
+    algorithmOverview: () => {
+        return `
+            <div class="algorithm-overview-section">
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5 class="text-primary mb-3">
+                            <i class="bi bi-gear-fill me-2"></i>Rate Recommendation Algorithm Methodology
+                        </h5>
+                        <p class="text-muted mb-3">
+                            This section explains the mathematical algorithms and assumptions used to generate rate recommendations.
+                            Understanding these methods helps validate the tool's calculations and ensures transparency in rate-setting decisions.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 h-100">
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-calculator me-2"></i>1. generateIdealTargetRateStructure()
+                            </h6>
+                            <ul class="small">
+                                <li><strong>Purpose:</strong> Calculate optimal rates for full cost recovery</li>
+                                <li><strong>Inputs:</strong> Revenue need, customer count, average usage</li>
+                                <li><strong>Method:</strong> Distributes revenue target across base rates (${((appState.recommendationSettings?.idealBaseRatePercent || 0.3) * 100).toFixed(0)}%) and volumetric charges (${((appState.recommendationSettings?.idealVolumetricPercent || 0.5) * 100).toFixed(0)}%)</li>
+                                <li><strong>Tier Multipliers:</strong> [${(appState.recommendationSettings?.tierMultipliers || [1.0, 1.5, 2.5, 4.0]).join(', ')}] for progressive pricing</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 h-100">
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-graph-up me-2"></i>2. stepRatesTowardsIdeal()
+                            </h6>
+                            <ul class="small">
+                                <li><strong>Purpose:</strong> Gradual transition to avoid rate shock</li>
+                                <li><strong>Method:</strong> Linear progression with ${((appState.recommendationSettings?.maxAnnualIncreasePercent || 0.12) * 100).toFixed(0)}% annual cap</li>
+                                <li><strong>Formula:</strong> NewRate = CurrentRate + min((OptimalRate - CurrentRate) × (Year/TotalYears), CurrentRate × ${((appState.recommendationSettings?.maxAnnualIncreasePercent || 0.12) * 100).toFixed(0)}%)</li>
+                                <li><strong>Constraint:</strong> Customer acceptability prioritized over speed</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 h-100">
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-cash-stack me-2"></i>3. generateFinancialProjection()
+                            </h6>
+                            <ul class="small">
+                                <li><strong>Purpose:</strong> Year-by-year financial sustainability analysis</li>
+                                <li><strong>Inputs:</strong> Operating costs (inflation-adjusted), debt service, infrastructure needs, grants</li>
+                                <li><strong>Solvency Check:</strong> Dynamic rate adjustment if revenue gap exceeds tolerance</li>
+                                <li><strong>Iterations:</strong> Up to ${appState.recommendationSettings?.maxSolvencyIterations || 200} adjustments per year</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="bg-white border rounded p-3">
+                            <h6 class="text-secondary mb-3">
+                                <i class="bi bi-sliders me-2"></i>Key Parameters (from appState.recommendationSettings)
+                            </h6>
+                            <table class="table table-sm mb-0">
+                                <tbody>
+                                    <tr>
+                                        <td class="fw-semibold">EPA Affordability Target:</td>
+                                        <td>≤ ${((appState.recommendationSettings?.epaAffordabilityThreshold || 0.025) * 100).toFixed(1)}% of MHI</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-semibold">Revenue Mix Target:</td>
+                                        <td>${((appState.recommendationSettings?.idealBaseRatePercent || 0.3) * 100).toFixed(0)}% base, ${((appState.recommendationSettings?.idealVolumetricPercent || 0.5) * 100).toFixed(0)}% volumetric</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-semibold">Rate Shock Limit:</td>
+                                        <td>${((appState.recommendationSettings?.maxAnnualIncreasePercent || 0.12) * 100).toFixed(0)}% maximum annual increase</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-semibold">Projection Period:</td>
+                                        <td>${appState.projectionPeriod || 10} years for full transition</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="bg-white border rounded p-3">
+                            <h6 class="text-secondary mb-3">
+                                <i class="bi bi-shield-check me-2"></i>Professional Review Notes
+                            </h6>
+                            <ul class="small mb-0">
+                                <li>All algorithms prioritize financial sustainability and customer affordability</li>
+                                <li>Rate shock protection may extend transition period beyond optimal</li>
+                                <li>Solvency adjustments ensure positive cash flow in each projection year</li>
+                                <li>Each table cell references actual appState values for validation</li>
+                                <li>Algorithm source code is traceable in rate-recommendations.js</li>
+                                <li>Cross-validation possible through cell-level math explanations</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mb-0">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h6 class="mb-2">
+                                <i class="bi bi-lightbulb me-2"></i>For Financial Professionals
+                            </h6>
+                            <p class="mb-0 small">
+                                Enable "Show Math" mode to see detailed calculation explanations for each table cell. 
+                                This provides full transparency into the mathematical formulas and data sources used for every calculation.
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-md-end">
+                            <button class="btn btn-outline-primary btn-sm" onclick="document.getElementById('showMathButton').click()">
+                                <i class="bi bi-calculator me-1"></i>Show Math Mode
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    yearProjection: (year, yearData) => {
+      return `<div class="math-tooltip">
+        <p><strong>Year ${year} Financial Projection</strong></p>
+        <p><u>Financial Overview</u>:</p>
+        <ul>
+          <li>Expected Revenue: $${formatNumber((yearData.expectedRevenue || 0).toFixed(2))}</li>
+          <li>Needed Revenue: $${formatNumber((yearData.neededRevenue || 0).toFixed(2))}</li>
+          <li>Revenue Gap: $${formatNumber((yearData.revenueGap || 0).toFixed(2))}</li>
+          <li>Reserve Balance: $${formatNumber((yearData.reserveBalance || 0).toFixed(2))}</li>
+        </ul>
+        <p><u>Rate Structure Transition</u>: Year ${year} of gradual progression to optimal rates</p>
+      </div>`;
+    },
+
+        // Instead of recalculating, reference what's already calculated
+    baseRateTransition: (baseRate, currentBaseRate, optimalBaseRate, year) => {
+      // Reference actual appState settings that are driving the calculations
+      const maxIncrease = appState.recommendationSettings?.maxAnnualIncreasePercent || 0.12;
+      const projectionYears = appState.projectionPeriod || 10;
+      const currentSettings = appState.recommendationSettings;
+      
+      return `<div class="math-tooltip">
+        <p><strong>Base Rate Algorithm Transparency for Year ${year}</strong></p>
+        
+        <p><u>Algorithm Source</u>:</p>
+        <p>Function: <code>stepRatesTowardsIdeal()</code> in rate-recommendations.js</p>
+        
+        <p><u>Input Parameters (from appState)</u>:</p>
+        <ul>
+          <li>Current Rate: $${currentBaseRate.toFixed(2)} (appState.currentBaseRate)</li>
+          <li>Target Rate: $${optimalBaseRate.toFixed(2)} (from generateIdealTargetRateStructure())</li>
+          <li>Max Annual Increase: ${(maxIncrease * 100).toFixed(1)}% (appState.recommendationSettings.maxAnnualIncreasePercent)</li>
+          <li>Transition Period: ${projectionYears} years (appState.projectionPeriod)</li>
+        </ul>
+        
+        <p><u>Calculated Result</u>:</p>
+        <p>Year ${year} Rate: $${baseRate.toFixed(2)}</p>
+        
+        <p><u>Rate Shock Protection</u>:</p>
+        <p>Annual increase capped at ${(maxIncrease * 100).toFixed(1)}% to ensure customer acceptance</p>
+        
+        <p><u>Revenue Target</u>:</p>
+        <p>Base rate targeting ${((currentSettings?.idealBaseRatePercent || 0.3) * 100).toFixed(0)}% of total revenue</p>
+      </div>`;
+    },
+
+    addonFeeProjection: (addonFee, year) => {
+      return `<div class="math-tooltip">
+        <p><strong>Add-on Fee for Year ${year}</strong></p>
+        <p><u>Fee Amount</u>: $${addonFee.toFixed(2)} per month</p>
+        <p><u>Status</u>: ${year === 0 ? 'Current fee maintained' : 'Projected fee based on policy'}</p>
+        <p><u>Purpose</u>: Infrastructure maintenance and capital improvements</p>
+      </div>`;
+    },
+
+        tierRateTransition: (tierNum, tierRate, year, yearData) => {
+      // Reference the actual settings driving the calculation
+      const tierMultiplier = appState.recommendationSettings?.tierMultipliers?.[tierNum-1] || 1.0;
+      const baseVolumetricRate = appState.rateRecommendations?.workingCalculations?.baseVolumetricUnitRate || 0;
+      const avgUsage = appState.avgMonthlyUsage || 0;
+      const tierLimitFactor = appState.recommendationSettings?.tierLimitFactors?.[tierNum-1];
+      
+      return `<div class="math-tooltip">
+        <p><strong>Tier ${tierNum} Rate Algorithm for Year ${year}</strong></p>
+        
+        <p><u>Algorithm Source</u>:</p>
+        <p>Function: <code>generateIdealTargetRateStructure()</code></p>
+        
+        <p><u>Rate Calculation Logic</u>:</p>
+        <ul>
+          <li>Base Volumetric Rate: $${baseVolumetricRate.toFixed(2)}/1,000 gal</li>
+          <li>Tier ${tierNum} Multiplier: ${tierMultiplier}× (appState.recommendationSettings.tierMultipliers[${tierNum-1}])</li>
+          <li>Calculated Rate: $${baseVolumetricRate.toFixed(2)} × ${tierMultiplier} = $${tierRate.toFixed(2)}</li>
+        </ul>
+        
+        <p><u>Tier Design (from appState)</u>:</p>
+        <ul>
+          <li>Average Usage: ${formatNumber(avgUsage)} gal/month (appState.avgMonthlyUsage)</li>
+          ${tierLimitFactor ? `<li>Tier Limit Factor: ${tierLimitFactor}× avg usage</li>` : ''}
+          <li>Progressive Pricing: Conservation incentive through increasing rates</li>
+        </ul>
+        
+        <p><u>Revenue Target</u>:</p>
+        <p>Tier rates designed to achieve ${((appState.recommendationSettings?.idealVolumetricPercent || 0.5) * 100).toFixed(0)}% of revenue from volumetric charges</p>
+        
+        <p><u>Current Year Result</u>:</p>
+        <p>Year ${year} Rate: $${tierRate.toFixed(2)}/1,000 gallons</p>
+      </div>`;
+    },
+
+    tierLimitProjection: (tierNum, tierLimit, year) => {
+      return `<div class="math-tooltip">
+        <p><strong>Tier ${tierNum} Limit for Year ${year}</strong></p>
+        <p><u>Usage Limit</u>: ${tierLimit !== null ? formatNumber(tierLimit) + ' gallons' : 'Unlimited'}</p>
+        <p><u>Design Purpose</u>: ${tierNum === 1 ? 'Basic household needs' : tierNum === 2 ? 'Average household usage' : tierNum === 3 ? 'Above-average usage' : 'Unlimited tier'}</p>
+      </div>`;
+    },
+
+    capitalImprovements: (capitalAmount, year) => {
+      return `<div class="math-tooltip">
+        <p><strong>Capital Improvements for Year ${year}</strong></p>
+        <p><u>Planned Investment</u>: $${formatNumber((capitalAmount || 0).toFixed(2))}</p>
+        <p><u>Funding Source</u>: ${capitalAmount > 0 ? 'Rate revenue and/or debt financing' : 'No major capital projects planned'}</p>
+        <p><u>Impact</u>: Infrastructure maintenance and system improvements</p>
+      </div>`;
+    },
+
+    grantsProjection: (grantAmount, year) => {
+      return `<div class="math-tooltip">
+        <p><strong>Grant Funding for Year ${year}</strong></p>
+        <p><u>Expected Grants</u>: $${formatNumber((grantAmount || 0).toFixed(2))}</p>
+        <p><u>Source</u>: ${grantAmount > 0 ? 'Federal, state, or local funding assistance' : 'No grants scheduled'}</p>
+        <p><u>Impact</u>: Reduces revenue requirements and customer rate burden</p>
+      </div>`;
+    },
+
+    newDebtProjection: (debtAmount, year) => {
+      return `<div class="math-tooltip">
+        <p><strong>New Debt Issuance for Year ${year}</strong></p>
+        <p><u>New Borrowing</u>: $${formatNumber((debtAmount || 0).toFixed(2))}</p>
+        <p><u>Purpose</u>: ${debtAmount > 0 ? 'Capital project financing' : 'No new debt planned'}</p>
+        <p><u>Impact</u>: Future debt service payments will increase operating costs</p>
+      </div>`;
+    },
+
+        expectedRevenue: (revenue, customerCount, year, yearData) => {
+      // Reference the actual calculation results, don't recalculate
+      const avgBill = revenue / (customerCount * 12);
+      const totalProjection = appState.rateRecommendations?.financialProjection;
+      const currentYearData = totalProjection?.find(y => y.year === year);
+      
+      return `<div class="math-tooltip">
+        <p><strong>Revenue Calculation Reference for Year ${year}</strong></p>
+        
+        <p><u>Data Source</u>:</p>
+        <p>Pre-calculated in appState.rateRecommendations.financialProjection[${year}]</p>
+        
+        <p><u>Calculation Engine</u>:</p>
+        <p>Function: <code>calculateYearlyRevenue()</code> using rate structure:</p>
+        <ul>
+          <li>Base Rate: $${(yearData.baseRate || 0).toFixed(2)}/month</li>
+          <li>Add-on Fee: $${(yearData.addonFee || 0).toFixed(2)}/month</li>
+          <li>Tier 1 Rate: $${(yearData.tier1Rate || 0).toFixed(2)}/1,000 gal</li>
+          <li>Customer Count: ${formatNumber(customerCount)} (appState.customerCount)</li>
+          <li>Avg Usage: ${formatNumber(appState.avgMonthlyUsage || 0)} gal/month</li>
+        </ul>
+        
+        <p><u>Calculated Results</u>:</p>
+        <ul>
+          <li>Annual Revenue: $${formatNumber(revenue.toFixed(2))}</li>
+          <li>Average Monthly Bill: $${avgBill.toFixed(2)}</li>
+          <li>Revenue per Customer: $${(revenue / customerCount).toFixed(2)}/year</li>
+        </ul>
+        
+        <p><u>Algorithm Parameters</u>:</p>
+        <p>Uses appState.avgMonthlyUsage (${appState.avgMonthlyUsage}) and TIER_MULTIPLIERS ${JSON.stringify(appState.recommendationSettings?.tierMultipliers || [])}</p>
+      </div>`;
+    },
+
+    neededRevenue: (neededRevenue, operatingCost, totalDebtService, capitalImprovements, grants, year) => {
+      const netCapital = (capitalImprovements || 0) - (grants || 0);
+      
+      return `<div class="math-tooltip">
+        <p><strong>Revenue Need for Year ${year}</strong></p>
+        <p><u>Cost Components</u>:</p>
+        <ul>
+          <li>Operating Costs: $${formatNumber((operatingCost || 0).toFixed(2))}</li>
+          <li>Debt Service: $${formatNumber((totalDebtService || 0).toFixed(2))}</li>
+          <li>Capital Improvements: $${formatNumber((capitalImprovements || 0).toFixed(2))}</li>
+          <li>Grant Funding: -$${formatNumber((grants || 0).toFixed(2))}</li>
+        </ul>
+        <p><u>Formula</u>: Operating + Debt Service + Capital - Grants</p>
+        <p><u>Total Need</u>: $${formatNumber(neededRevenue.toFixed(2))}</p>
+      </div>`;
+    },
+
+    revenueGap: (revenueGap, expectedRevenue, neededRevenue, year) => {
+      const status = revenueGap >= 0 ? 'Surplus' : 'Deficit';
+      const color = revenueGap >= 0 ? 'green' : 'red';
+      
+      return `<div class="math-tooltip">
+        <p><strong>Revenue Gap for Year ${year}</strong></p>
+        <p><u>Gap Analysis</u>:</p>
+        <ul>
+          <li>Expected Revenue: $${formatNumber(expectedRevenue.toFixed(2))}</li>
+          <li>Needed Revenue: $${formatNumber(neededRevenue.toFixed(2))}</li>
+          <li>Gap: $${formatNumber(revenueGap.toFixed(2))}</li>
+        </ul>
+        <p><u>Status</u>: <span style="color: ${color}; font-weight: bold;">${status}</span></p>
+        <p><u>Formula</u>: Expected Revenue - Needed Revenue</p>
+      </div>`;
+    },
+
+    reserveBalance: (reserveBalance, targetReserve, year) => {
+      const targetMet = reserveBalance >= targetReserve;
+      const status = reserveBalance >= 0 ? (targetMet ? 'Healthy' : 'Positive') : 'Critical';
+      
+      return `<div class="math-tooltip">
+        <p><strong>Reserve Balance for Year ${year}</strong></p>
+        <p><u>Financial Position</u>:</p>
+        <ul>
+          <li>Current Balance: $${formatNumber(reserveBalance.toFixed(2))}</li>
+          <li>Target Reserve: $${formatNumber((targetReserve || 0).toFixed(2))}</li>
+          <li>Status: ${status}</li>
+        </ul>
+        <p><u>Calculation</u>: Previous Balance + Revenue Gap ± Capital Transactions</p>
+        <p><u>Purpose</u>: Emergency fund and capital project financing</p>
+      </div>`;
+    },
+
+    debtServiceProjection: (totalDebtService, year) => {
+      return `<div class="math-tooltip">
+        <p><strong>Debt Service for Year ${year}</strong></p>
+        <p><u>Total Payments</u>: $${formatNumber((totalDebtService || 0).toFixed(2))}</p>
+        <p><u>Components</u>: Principal and interest payments on all active loans</p>
+        <p><u>Impact</u>: Fixed annual obligation that must be covered by rate revenue</p>
+        ${totalDebtService > 0 ? '<p><u>Note</u>: Includes both existing and new debt service</p>' : ''}
+      </div>`;
+    },
+
+        affordabilityAssessment: (avgBill, medianIncome, threshold) => {
+      // Reference actual calculated results from appState
+      const currentAffordability = appState.currentResults?.affordabilityMHI || 0;
+      const optimalAffordability = appState.rateRecommendations?.optimalRates?.affordabilityMHI || 0;
+      const epaThreshold = appState.recommendationSettings?.epaAffordabilityThreshold || 0.025;
+      
+      return `<div class="math-tooltip">
+        <p><strong>Affordability Analysis - Algorithm Transparency</strong></p>
+        
+        <p><u>Data Sources (from appState)</u>:</p>
+        <ul>
+          <li>Recommended Bill: $${avgBill.toFixed(2)} (calculated)</li>
+          <li>Median Income: $${formatNumber(medianIncome.toFixed(2))} (appState.medianIncome)</li>
+          <li>EPA Threshold: ${(epaThreshold * 100).toFixed(1)}% (appState.recommendationSettings.epaAffordabilityThreshold)</li>
+        </ul>
+        
+        <p><u>Current vs Recommended</u>:</p>
+        <ul>
+          <li>Current Affordability: ${(currentAffordability * 100).toFixed(2)}% of MHI</li>
+          <li>Recommended Affordability: ${(optimalAffordability * 100).toFixed(2)}% of MHI</li>
+          <li>EPA Compliance: ${(avgBill / (medianIncome / 12)) <= epaThreshold ? '✓ Compliant' : '⚠ Above threshold'}</li>
+        </ul>
+        
+        <p><u>Algorithm Functions</u>:</p>
+        <p>Calculated using <code>getAffordabilityBadgeClass()</code> and <code>getAffordabilityLabel()</code></p>
+        
+        <p><u>Policy Context</u>:</p>
+        <p>EPA guidance recommends water bills not exceed ${(epaThreshold * 100).toFixed(1)}% of median household income</p>
+      </div>`;
+    },
+
+    recommendedBaseRate: (baseRate, currentBaseRate, optimalBaseRate) => {
+      const difference = baseRate - currentBaseRate;
+      const percentChange = currentBaseRate > 0 ? (difference / currentBaseRate) * 100 : 0;
+      
+      return `<div class="math-tooltip">
+        <p><strong>Recommended Base Rate</strong></p>
+        <p><u>Rate Structure</u>:</p>
+        <ul>
+          <li>Current Rate: $${currentBaseRate.toFixed(2)}</li>
+          <li>Recommended Rate: $${baseRate.toFixed(2)}</li>
+          <li>Ultimate Target: $${optimalBaseRate.toFixed(2)}</li>
+        </ul>
+        <p><u>Change</u>: $${difference.toFixed(2)} (${percentChange >= 0 ? '+' : ''}${percentChange.toFixed(1)}%)</p>
+        <p><u>Purpose</u>: Fixed monthly revenue for basic system operations</p>
+      </div>`;
+    },
+
+    recommendedAddonFee: (addonFee, currentAddonFee) => {
+      const difference = addonFee - currentAddonFee;
+      
+      return `<div class="math-tooltip">
+        <p><strong>Recommended Add-on Fee</strong></p>
+        <p><u>Fee Structure</u>:</p>
+        <ul>
+          <li>Current Fee: $${currentAddonFee.toFixed(2)}</li>
+          <li>Recommended Fee: $${addonFee.toFixed(2)}</li>
+          <li>Change: $${difference.toFixed(2)}</li>
+        </ul>
+        <p><u>Purpose</u>: Infrastructure maintenance and improvements</p>
+      </div>`;
+    }
+  }
+
+// ...existing code...
+};
 

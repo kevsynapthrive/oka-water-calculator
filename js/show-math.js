@@ -38,42 +38,114 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     bsToast.show();
   }
-
-  // Main event handler for toggling math explanations
-  showMathButton.addEventListener("click", () => {
-    mathExplanationsVisible = !mathExplanationsVisible;
+/**
+ * Disable math mode programmatically (called when appState changes)
+ */
+function disableMathMode() {
+    if (!mathExplanationsVisible) return; // Already disabled
     
-    // Toggle class on body to control visibility
-    document.body.classList.toggle('show-math-explanations', mathExplanationsVisible);
+    mathExplanationsVisible = false;
     
-    // Update button text/icon to reflect current state
-    if (mathExplanationsVisible) {
-      showMathButton.innerHTML = '<i class="bi bi-calculator-fill"></i> <span class="d-none d-lg-inline">Hide Math</span>';
-      showMathButton.classList.add('active');
-      
-      // Show toast for enabling math mode
-      showMathToast(true);
-      
-      // Generate and update all tooltips with current values
-      updateAllMathExplanations();
-    } else {
-      showMathButton.innerHTML = '<i class="bi bi-calculator"></i> <span class="d-none d-lg-inline">Math</span>';
-      showMathButton.classList.remove('active');
-      
-      // Show toast for disabling math mode
-      showMathToast(false);
-      
-      // Dispose of tooltips when hiding to prevent UI issues
-      const mathTooltips = document.querySelectorAll('.math-explanation');
-      mathTooltips.forEach(tooltip => {
+    // Toggle class on body
+    document.body.classList.remove('show-math-explanations');
+    
+    // Update button appearance
+    showMathButton.innerHTML = '<i class="bi bi-calculator"></i> <span class="d-none d-lg-inline">Math</span>';
+    showMathButton.classList.remove('active');
+    
+    // Hide algorithm overview button
+    const algorithmOverviewBtn = document.getElementById('algorithmOverviewToggle');
+    if (algorithmOverviewBtn) {
+        algorithmOverviewBtn.style.display = 'none';
+        
+        // Collapse the section if it's open
+        const overviewSection = document.getElementById('algorithmOverviewSection');
+        if (overviewSection && overviewSection.classList.contains('show')) {
+            overviewSection.classList.remove('show');
+            
+            // Reset button state
+            algorithmOverviewBtn.setAttribute('aria-expanded', 'false');
+            const chevron = algorithmOverviewBtn.querySelector('.toggle-chevron');
+            if (chevron) {
+                chevron.style.transform = '';
+            }
+        }
+    }
+    
+    // Dispose of tooltips
+    const mathTooltips = document.querySelectorAll('.math-explanation');
+    mathTooltips.forEach(tooltip => {
         const tooltipInstance = bootstrap.Tooltip.getInstance(tooltip);
         if (tooltipInstance) {
-          tooltipInstance.dispose();
+            tooltipInstance.dispose();
         }
-      });
-    }
-  });
-  
+    });
+    
+    // Show toast notification
+    showMathToast(false);
+}
+
+// Make this function available globally
+window.disableMathMode = disableMathMode;
+  // Main event handler for toggling math explanations
+  showMathButton.addEventListener("click", () => {
+      mathExplanationsVisible = !mathExplanationsVisible;
+      
+      // Toggle class on body to control visibility
+      document.body.classList.toggle('show-math-explanations', mathExplanationsVisible);
+      
+      // Update button text/icon to reflect current state
+      if (mathExplanationsVisible) {
+          showMathButton.innerHTML = '<i class="bi bi-calculator-fill"></i> <span class="d-none d-lg-inline">Hide Math</span>';
+          showMathButton.classList.add('active');
+          
+          // Show algorithm overview button when math mode is enabled
+          const algorithmOverviewBtn = document.getElementById('algorithmOverviewToggle');
+          if (algorithmOverviewBtn) {
+              algorithmOverviewBtn.style.display = 'inline-block';
+              
+              // Populate the content section
+              const contentDiv = document.getElementById('algorithmOverviewContent');
+              if (contentDiv && window.mathExplanations?.rateRecommendations?.algorithmOverview) {
+                  contentDiv.innerHTML = window.mathExplanations.rateRecommendations.algorithmOverview();
+              }
+          }
+          
+          // Show toast for enabling math mode
+          showMathToast(true);
+          
+          // Generate and update all tooltips with current values
+          updateAllMathExplanations();
+          
+      } else {
+          showMathButton.innerHTML = '<i class="bi bi-calculator"></i> <span class="d-none d-lg-inline">Math</span>';
+          showMathButton.classList.remove('active');
+          
+          // Hide algorithm overview button when math mode is disabled
+          const algorithmOverviewBtn = document.getElementById('algorithmOverviewToggle');
+          if (algorithmOverviewBtn) {
+              algorithmOverviewBtn.style.display = 'none';
+              
+              // Collapse the section if it's open
+              const overviewSection = document.getElementById('algorithmOverviewSection');
+              if (overviewSection && overviewSection.classList.contains('show')) {
+                  const bsCollapse = new bootstrap.Collapse(overviewSection, { hide: true });
+              }
+          }
+          
+          // Show toast for disabling math mode
+          showMathToast(false);
+          
+          // Dispose of tooltips when hiding to prevent UI issues
+          const mathTooltips = document.querySelectorAll('.math-explanation');
+          mathTooltips.forEach(tooltip => {
+              const tooltipInstance = bootstrap.Tooltip.getInstance(tooltip);
+              if (tooltipInstance) {
+                  tooltipInstance.dispose();
+              }
+          });
+      }
+  });  
   /**
    * Check if an element ID represents a calculated result (not an input)
    * Only these elements should receive math explanations
@@ -98,7 +170,7 @@ document.addEventListener("DOMContentLoaded", () => {
           'GrantFunding', 'NetRevenueNeed', 'currentYearGrants',
           
           // Financial projection table and cells
-          'financialProjectionTable', 'projectionTable',
+          'financialProjectionTable', 'projectionTable', 'projectionTableBody',
           'projectionYear_', 'projectionBaseRate_', 'projectionAddonFee_', 
           'projectionTier1Rate_', 'projectionTier1Limit_',
           'projectionTier2Rate_', 'projectionTier2Limit_',
@@ -121,6 +193,7 @@ document.addEventListener("DOMContentLoaded", () => {
           
           // Financial advisor recommendations
           'recommendedBaseRate', 'recommendedAddonFee', 'recommendedAvgBill', 'recommendedAffordabilityMHI',
+          'recommendedAffordabilityIndicator', // ADD THIS
           'recommendedTier1Limit', 'recommendedTier1Rate', 'recommendedTier2Limit', 'recommendedTier2Rate',
           'recommendedTier3Limit', 'recommendedTier3Rate', 'recommendedTier4Limit', 'recommendedTier4Rate',
           
@@ -155,34 +228,32 @@ document.addEventListener("DOMContentLoaded", () => {
     updateRateStructureExplanations('future', appState.futureResults, appState.futureTiers, 
                                     appState.futureBaseRate, appState.futureAddonFee);
     
-    // ADD THESE MISSING CALLS:
+    // Continue with existing calls...
     updateBillBreakdownExplanations('current');
     updateBillBreakdownExplanations('future');
     updateAffordabilityExplanations();
     updateBillComparisonExplanations();
-    
-    // Continue with existing calls...
     updateWaterLossAndPovertyExplanations();
     updateRevenueExplanations();
-    updateProjectionExplanations();
+    updateProjectionExplanations(); // This will now handle the rate recommendations table
     updateKeyMetricsComparisonExplanations();
-    updateRateRecommendationsExplanations();
+    updateRateRecommendationsExplanations(); // UPDATE: This will call updateProjectionExplanations()
     updateChartExplanations();
     
     // Initialize all tooltips
     const mathTooltips = document.querySelectorAll('.math-explanation');
     mathTooltips.forEach(tooltip => {
-      const tooltipInstance = bootstrap.Tooltip.getInstance(tooltip);
-      if (tooltipInstance) {
-        tooltipInstance.dispose();
-      }
-      
-      new bootstrap.Tooltip(tooltip, {
-        container: 'body',
-        html: true,
-        trigger: 'hover focus',
-        placement: 'auto'
-      });
+        const tooltipInstance = bootstrap.Tooltip.getInstance(tooltip);
+        if (tooltipInstance) {
+            tooltipInstance.dispose();
+        }
+        
+        new bootstrap.Tooltip(tooltip, {
+            container: 'body',
+            html: true,
+            trigger: 'hover focus',
+            placement: 'auto'
+        });
     });
   }  
   /**
@@ -427,9 +498,12 @@ updateElementTooltip('currentYearGrants',
    * Updates math explanations for financial projections
    */
   function updateProjectionExplanations() {
-      if (!appState.projectionResults || !appState.projectionResults.years) return;
+      // UPDATE: Use the correct data source for rate recommendations
+      if (!appState.rateRecommendations || !appState.rateRecommendations.financialProjection) return;
       
-      // For each column in the projection table
+      const projection = appState.rateRecommendations.financialProjection;
+      
+      // UPDATE: Use the correct table ID from your HTML
       const projectionTable = document.getElementById('financialProjectionTable');
       if (projectionTable) {
           const headers = projectionTable.querySelectorAll('th');
@@ -441,20 +515,487 @@ updateElementTooltip('currentYearGrants',
               }
           });
       }
-  
-      // Add explanations to projection table rows
-      appState.projectionResults.years.forEach((year, i) => {
-          const yearState = {
-              operatingCost: appState.projectionResults.operatingCosts ? appState.projectionResults.operatingCosts[i] : 0,
-              debtService: appState.projectionResults.debtService ? appState.projectionResults.debtService[i] : 0,
-              infrastructureFunding: appState.projectionResults.infrastructureFunding ? appState.projectionResults.infrastructureFunding[i] : 0,
-              revenueNeeds: appState.projectionResults.revenueNeeds ? appState.projectionResults.revenueNeeds[i] : 0,
-              revenue: appState.projectionResults.revenue ? appState.projectionResults.revenue[i] : 0,
-              reserveBalance: appState.projectionResults.reserves ? appState.projectionResults.reserves[i] : 0
-          };
+
+      // UPDATE: Use the correct projection data structure and add all the missing cell tooltips
+      projection.forEach(yearData => {
+          const year = yearData.year;
           
+          // Year cell tooltip
           updateElementTooltip(`projectionYear_${year}`, 
-                              window.mathExplanations.financialProjection.yearlyProjection(year, yearState));
+              window.mathExplanations.rateRecommendations.yearProjection(year, yearData));
+          
+          // Rate structure tooltips
+          updateElementTooltip(`projectionBaseRate_${year}`, 
+              window.mathExplanations.rateRecommendations.baseRateTransition(
+                  yearData.baseRate, 
+                  appState.currentBaseRate, 
+                  appState.rateRecommendations.optimalRates?.baseRate || yearData.baseRate,
+                  year
+              ));
+          
+          updateElementTooltip(`projectionAddonFee_${year}`, 
+              window.mathExplanations.rateRecommendations.addonFeeProjection(yearData.addonFee, year));
+          
+          // Tier rate tooltips
+          updateElementTooltip(`projectionTier1Rate_${year}`, 
+              window.mathExplanations.rateRecommendations.tierRateTransition(
+                  1, yearData.tier1Rate, year, yearData
+              ));
+          
+          updateElementTooltip(`projectionTier1Limit_${year}`, 
+              window.mathExplanations.rateRecommendations.tierLimitProjection(
+                  1, yearData.tier1Limit, year
+              ));
+          
+          if (yearData.tier2Rate !== null) {
+              updateElementTooltip(`projectionTier2Rate_${year}`, 
+                  window.mathExplanations.rateRecommendations.tierRateTransition(
+                      2, yearData.tier2Rate, year, yearData
+                  ));
+              
+              updateElementTooltip(`projectionTier2Limit_${year}`, 
+                  window.mathExplanations.rateRecommendations.tierLimitProjection(
+                      2, yearData.tier2Limit, year
+                  ));
+          }
+          
+          if (yearData.tier3Rate !== null) {
+              updateElementTooltip(`projectionTier3Rate_${year}`, 
+                  window.mathExplanations.rateRecommendations.tierRateTransition(
+                      3, yearData.tier3Rate, year, yearData
+                  ));
+              
+              updateElementTooltip(`projectionTier3Limit_${year}`, 
+                  window.mathExplanations.rateRecommendations.tierLimitProjection(
+                      3, yearData.tier3Limit, year
+                  ));
+          }
+          
+          if (yearData.tier4Rate !== null) {
+              updateElementTooltip(`projectionTier4Rate_${year}`, 
+                  window.mathExplanations.rateRecommendations.tierRateTransition(
+                      4, yearData.tier4Rate, year, yearData
+                  ));
+          }
+          
+          // Financial planning tooltips
+          updateElementTooltip(`projectionCapitalImprovements_${year}`, 
+              window.mathExplanations.rateRecommendations.capitalImprovements(
+                  yearData.capitalImprovements, year
+              ));
+          
+          updateElementTooltip(`projectionGrants_${year}`, 
+              window.mathExplanations.rateRecommendations.grantsProjection(
+                  yearData.grants, year
+              ));
+          
+          updateElementTooltip(`projectionNewDebt_${year}`, 
+              window.mathExplanations.rateRecommendations.newDebtProjection(
+                  yearData.newDebt, year
+              ));
+          
+          // Revenue analysis tooltips
+          updateElementTooltip(`projectionExpectedRevenue_${year}`, 
+              window.mathExplanations.rateRecommendations.expectedRevenue(
+                  yearData.expectedRevenue, 
+                  yearData.customerCount || appState.customerCount,
+                  year,
+                  yearData
+              ));
+          
+          updateElementTooltip(`projectionNeededRevenue_${year}`, 
+              window.mathExplanations.rateRecommendations.neededRevenue(
+                  yearData.neededRevenue,
+                  yearData.operatingCost || appState.operatingCost,
+                  yearData.totalDebtService || 0,
+                  yearData.capitalImprovements || 0,
+                  yearData.grants || 0,
+                  year
+              ));
+          
+          updateElementTooltip(`projectionRevenueGap_${year}`, 
+              window.mathExplanations.rateRecommendations.revenueGap(
+                  yearData.revenueGap,
+                  yearData.expectedRevenue,
+                  yearData.neededRevenue,
+                  year
+              ));
+          
+          updateElementTooltip(`projectionReserveBalance_${year}`, 
+              window.mathExplanations.rateRecommendations.reserveBalance(
+                  yearData.reserveBalance,
+                  appState.targetReserve || 0,
+                  year
+              ));
+          
+          updateElementTooltip(`projectionDebtService_${year}`, 
+              window.mathExplanations.rateRecommendations.debtServiceProjection(
+                  yearData.totalDebtService || 0,
+                  year
+              ));
+      });
+  }
+  
+  /**
+   * Helper function to update or create a tooltip on an element
+   */
+    function updateElementTooltip(elementId, tooltipContent) {
+      // Only add tooltips to calculated results, not input fields
+      if (!isResultElement(elementId)) return;
+      
+      const element = document.getElementById(elementId);
+      if (!element) return;
+      
+      // Find the table cell (TD) that contains this element
+      let tableCell = element;
+      while (tableCell && tableCell.tagName !== 'TD') {
+        tableCell = tableCell.parentElement;
+      }
+      
+      // Determine where to place the tooltip icon
+      const container = tableCell || element.parentElement;
+      
+      // Look for existing math explanation icon
+      let mathIcon = container.querySelector('.math-explanation');
+      
+      // If no icon exists, create one
+      if (!mathIcon) {
+        mathIcon = document.createElement('i');
+        mathIcon.className = 'bi bi-calculator-fill math-explanation';
+        mathIcon.style.cursor = 'pointer';
+        mathIcon.setAttribute('data-bs-toggle', 'tooltip');
+        mathIcon.setAttribute('data-bs-placement', 'auto');
+        
+        if (tableCell) {
+          // Create a wrapper to contain both the original content and the icon
+          // to ensure they stay on the same line
+          const wrapper = document.createElement('div');
+          wrapper.style.display = 'flex';
+          wrapper.style.alignItems = 'center';
+          wrapper.style.gap = '4px';
+          
+          // Move cell's contents (except any existing tooltips) into wrapper
+          while (tableCell.firstChild) {
+            if (!tableCell.firstChild.classList || !tableCell.firstChild.classList.contains('math-explanation')) {
+              wrapper.appendChild(tableCell.firstChild);
+            } else {
+              tableCell.removeChild(tableCell.firstChild);
+            }
+          }
+          
+          // Add the icon to the wrapper
+          wrapper.appendChild(mathIcon);
+          
+          // Add the wrapper to the cell
+          tableCell.appendChild(wrapper);
+        } else {
+          // For non-table elements, use the standard approach
+          element.parentNode.insertBefore(mathIcon, element.nextSibling);
+        }
+      }
+      
+      // Update tooltip content
+      mathIcon.setAttribute('data-bs-original-title', tooltipContent);
+    }
+  
+  /**
+   * Updates math explanations for key metrics comparison table
+   */
+  function updateKeyMetricsComparisonExplanations() {
+      const table = document.getElementById('keyMetricsComparisonTable');
+      if (!table) return;
+      
+      // Add tooltips to each metric row using pre-calculated values
+      const rows = table.querySelectorAll('tbody tr');
+      rows.forEach(row => {
+        const metricCell = row.querySelector('td:first-child');
+        const currentCell = row.querySelector('td:nth-child(2)');
+        const futureCell = row.querySelector('td:nth-child(3)');
+        const changeCell = row.querySelector('td:nth-child(4)');
+        
+        if (!metricCell) return;
+        
+        const metricName = metricCell.textContent.trim();
+        let explanation = '';
+        
+        // Generate explanations based on the metric type using pre-calculated values
+        if (metricName.includes('Monthly Bill')) {
+          explanation = window.mathExplanations.comparison.averageBill();
+        } else if (metricName.includes('Affordability')) {
+          explanation = window.mathExplanations.comparison.affordability();
+        } else if (metricName.includes('Annual System Revenue')) {
+          explanation = window.mathExplanations.comparison.revenue();
+        } else if (metricName.includes('Revenue-Need Coverage')) {
+          explanation = window.mathExplanations.comparison.revenueCoverage();
+        } else if (metricName.includes('Revenue Gap')) {
+          explanation = window.mathExplanations.comparison.revenueGap();
+        }
+        
+        // Only add tooltip if we have an explanation
+        if (explanation) {
+          // Add tooltip to the metric name cell
+          const rowId = `keyMetricsRow_${metricName.replace(/\W+/g, '')}`;
+          metricCell.id = rowId;
+          updateElementTooltip(rowId, explanation);
+          
+          // Add tooltip to the change cell if present
+          if (changeCell) {
+            const changeId = `metricChange_${metricName.replace(/\W+/g, '')}`;
+            changeCell.id = changeId;
+            updateElementTooltip(changeId, explanation);
+          }
+          
+          // Add tooltips to current and future value cells for individual validation
+          if (currentCell) {
+            const currentId = `metricCurrent_${metricName.replace(/\W+/g, '')}`;
+            currentCell.id = currentId;
+            
+            // Create specific explanation for current value
+            let currentExplanation = '';
+            if (metricName.includes('Monthly Bill')) {
+              currentExplanation = window.mathExplanations.billBreakdown.totalBill(
+                appState.currentResults?.baseRateCost || 0,
+                appState.currentResults?.addonFeeCost || 0,
+                appState.currentResults?.tierBreakdown?.map(t => t.cost) || [],
+                appState.currentResults?.totalBill || 0
+              );
+            } else if (metricName.includes('Affordability')) {
+              const monthlyMHI = appState.medianIncome / 12;
+              const affordabilityPercentage = appState.currentResults?.affordabilityMHI ? (appState.currentResults.affordabilityMHI * 100) : 0;
+              currentExplanation = window.mathExplanations.affordability.percentOfMHI(
+                appState.currentResults?.totalBill || 0,
+                appState.medianIncome,
+                monthlyMHI,
+                affordabilityPercentage
+              );
+            } else if (metricName.includes('Annual System Revenue')) {
+              currentExplanation = window.mathExplanations.revenue.annualRevenue(
+                appState.currentResults?.totalBill || 0,
+                appState.customerCount,
+                appState.currentResults?.annualRevenue || 0
+              );
+            }
+            
+            if (currentExplanation) {
+              updateElementTooltip(currentId, currentExplanation);
+            }
+          }
+          
+          if (futureCell) {
+            const futureId = `metricFuture_${metricName.replace(/\W+/g, '')}`;
+            futureCell.id = futureId;
+            
+            // Create specific explanation for future value
+            let futureExplanation = '';
+            if (metricName.includes('Monthly Bill')) {
+              futureExplanation = window.mathExplanations.billBreakdown.totalBill(
+                appState.futureResults?.baseRateCost || 0,
+                appState.futureResults?.addonFeeCost || 0,
+                appState.futureResults?.tierBreakdown?.map(t => t.cost) || [],
+                appState.futureResults?.totalBill || 0
+              );
+            } else if (metricName.includes('Affordability')) {
+              const monthlyMHI = appState.medianIncome / 12;
+              const affordabilityPercentage = appState.futureResults?.affordabilityMHI ? (appState.futureResults.affordabilityMHI * 100) : 0;
+              futureExplanation = window.mathExplanations.affordability.percentOfMHI(
+                appState.futureResults?.totalBill || 0,
+                appState.medianIncome,
+                monthlyMHI,
+                affordabilityPercentage
+              );
+            } else if (metricName.includes('Annual System Revenue')) {
+              futureExplanation = window.mathExplanations.revenue.annualRevenue(
+                appState.futureResults?.totalBill || 0,
+                appState.customerCount,
+                appState.futureResults?.annualRevenue || 0
+              );
+            }
+            
+            if (futureExplanation) {
+              updateElementTooltip(futureId, futureExplanation);
+            }
+          }
+        }
+      });
+  }  
+  /**
+   * Updates math explanations for rate recommendations
+   */
+  function updateRateRecommendationsExplanations() {
+      // UPDATE: Use the correct data source and add missing tooltips
+      if (!appState.rateRecommendations) return;
+      
+      const recommendations = appState.rateRecommendations;
+      
+      // Affordability indicator tooltip
+      updateElementTooltip('recommendedAffordabilityIndicator', 
+          window.mathExplanations.rateRecommendations.affordabilityAssessment(
+              recommendations.optimalRates?.avgBill || 0,
+              appState.medianIncome || 0,
+              appState.recommendationSettings?.EPA_AFFORDABILITY_THRESHOLD || 0.025
+          ));
+      
+      // Year 1 recommendation tooltips (if they exist as separate elements)
+      if (recommendations.financialProjection && recommendations.financialProjection.length > 0) {
+          const year1 = recommendations.financialProjection.find(y => y.year === 1) || recommendations.financialProjection[0];
+          
+          // Add tooltips for the recommendation card elements
+          updateElementTooltip('recommendedBaseRate', 
+              window.mathExplanations.rateRecommendations.recommendedBaseRate(
+                  year1.baseRate,
+                  appState.currentBaseRate || 0,
+                  recommendations.optimalRates?.baseRate || year1.baseRate
+              ));
+          
+          updateElementTooltip('recommendedAddonFee', 
+              window.mathExplanations.rateRecommendations.recommendedAddonFee(
+                  year1.addonFee,
+                  appState.currentAddonFee || 0
+              ));
+      }
+      
+      // UPDATE: Call the projection explanations to handle the table
+      updateProjectionExplanations();
+  }
+  /**
+   * Updates math explanations for financial projections
+   */
+  function updateProjectionExplanations() {
+      // UPDATE: Use the correct data source for rate recommendations
+      if (!appState.rateRecommendations || !appState.rateRecommendations.financialProjection) return;
+      
+      const projection = appState.rateRecommendations.financialProjection;
+      
+      // UPDATE: Use the correct table ID from your HTML
+      const projectionTable = document.getElementById('financialProjectionTable');
+      if (projectionTable) {
+          const headers = projectionTable.querySelectorAll('th');
+          headers.forEach((header, index) => {
+              if (index > 0) { // Skip the Year column
+                  const columnId = `projectionColumn_${index}`;
+                  header.id = columnId;
+                  updateElementTooltip(columnId, window.mathExplanations.financialProjection[getColumnExplanationKey(index)]);
+              }
+          });
+      }
+
+      // UPDATE: Use the correct projection data structure and add all the missing cell tooltips
+      projection.forEach(yearData => {
+          const year = yearData.year;
+          
+          // Year cell tooltip
+          updateElementTooltip(`projectionYear_${year}`, 
+              window.mathExplanations.rateRecommendations.yearProjection(year, yearData));
+          
+          // Rate structure tooltips
+          updateElementTooltip(`projectionBaseRate_${year}`, 
+              window.mathExplanations.rateRecommendations.baseRateTransition(
+                  yearData.baseRate, 
+                  appState.currentBaseRate, 
+                  appState.rateRecommendations.optimalRates?.baseRate || yearData.baseRate,
+                  year
+              ));
+          
+          updateElementTooltip(`projectionAddonFee_${year}`, 
+              window.mathExplanations.rateRecommendations.addonFeeProjection(yearData.addonFee, year));
+          
+          // Tier rate tooltips
+          updateElementTooltip(`projectionTier1Rate_${year}`, 
+              window.mathExplanations.rateRecommendations.tierRateTransition(
+                  1, yearData.tier1Rate, year, yearData
+              ));
+          
+          updateElementTooltip(`projectionTier1Limit_${year}`, 
+              window.mathExplanations.rateRecommendations.tierLimitProjection(
+                  1, yearData.tier1Limit, year
+              ));
+          
+          if (yearData.tier2Rate !== null) {
+              updateElementTooltip(`projectionTier2Rate_${year}`, 
+                  window.mathExplanations.rateRecommendations.tierRateTransition(
+                      2, yearData.tier2Rate, year, yearData
+                  ));
+              
+              updateElementTooltip(`projectionTier2Limit_${year}`, 
+                  window.mathExplanations.rateRecommendations.tierLimitProjection(
+                      2, yearData.tier2Limit, year
+                  ));
+          }
+          
+          if (yearData.tier3Rate !== null) {
+              updateElementTooltip(`projectionTier3Rate_${year}`, 
+                  window.mathExplanations.rateRecommendations.tierRateTransition(
+                      3, yearData.tier3Rate, year, yearData
+                  ));
+              
+              updateElementTooltip(`projectionTier3Limit_${year}`, 
+                  window.mathExplanations.rateRecommendations.tierLimitProjection(
+                      3, yearData.tier3Limit, year
+                  ));
+          }
+          
+          if (yearData.tier4Rate !== null) {
+              updateElementTooltip(`projectionTier4Rate_${year}`, 
+                  window.mathExplanations.rateRecommendations.tierRateTransition(
+                      4, yearData.tier4Rate, year, yearData
+                  ));
+          }
+          
+          // Financial planning tooltips
+          updateElementTooltip(`projectionCapitalImprovements_${year}`, 
+              window.mathExplanations.rateRecommendations.capitalImprovements(
+                  yearData.capitalImprovements, year
+              ));
+          
+          updateElementTooltip(`projectionGrants_${year}`, 
+              window.mathExplanations.rateRecommendations.grantsProjection(
+                  yearData.grants, year
+              ));
+          
+          updateElementTooltip(`projectionNewDebt_${year}`, 
+              window.mathExplanations.rateRecommendations.newDebtProjection(
+                  yearData.newDebt, year
+              ));
+          
+          // Revenue analysis tooltips
+          updateElementTooltip(`projectionExpectedRevenue_${year}`, 
+              window.mathExplanations.rateRecommendations.expectedRevenue(
+                  yearData.expectedRevenue, 
+                  yearData.customerCount || appState.customerCount,
+                  year,
+                  yearData
+              ));
+          
+          updateElementTooltip(`projectionNeededRevenue_${year}`, 
+              window.mathExplanations.rateRecommendations.neededRevenue(
+                  yearData.neededRevenue,
+                  yearData.operatingCost || appState.operatingCost,
+                  yearData.totalDebtService || 0,
+                  yearData.capitalImprovements || 0,
+                  yearData.grants || 0,
+                  year
+              ));
+          
+          updateElementTooltip(`projectionRevenueGap_${year}`, 
+              window.mathExplanations.rateRecommendations.revenueGap(
+                  yearData.revenueGap,
+                  yearData.expectedRevenue,
+                  yearData.neededRevenue,
+                  year
+              ));
+          
+          updateElementTooltip(`projectionReserveBalance_${year}`, 
+              window.mathExplanations.rateRecommendations.reserveBalance(
+                  yearData.reserveBalance,
+                  appState.targetReserve || 0,
+                  year
+              ));
+          
+          updateElementTooltip(`projectionDebtService_${year}`, 
+              window.mathExplanations.rateRecommendations.debtServiceProjection(
+                  yearData.totalDebtService || 0,
+                  year
+              ));
       });
   }
   
@@ -644,114 +1185,182 @@ updateElementTooltip('currentYearGrants',
    * Updates math explanations for rate recommendations
    */
   function updateRateRecommendationsExplanations() {
-      if (!appState.recommendedRates) return;
+      // UPDATE: Use the correct data source and add missing tooltips
+      if (!appState.rateRecommendations) return;
       
-      // Recommended Base Rate
-      updateElementTooltip('recommendedBaseRate', 
-                         window.mathExplanations.advisor.recommendedBaseRate(
-                             appState.recommendedRates.baseRate || 0,
-                             appState.currentBaseRate || 0,
-                             'Cost recovery optimization with affordability considerations'
-                         ));
+      const recommendations = appState.rateRecommendations;
       
-      // Recommended Add-on Fee
-      updateElementTooltip('recommendedAddonFee', 
-                         window.mathExplanations.advisor.recommendedAddonFee(
-                             appState.recommendedRates.addonFee || 0,
-                             appState.currentAddonFee || 0,
-                             'Infrastructure replacement cost allocation'
-                         ));
+      // Affordability indicator tooltip
+      updateElementTooltip('recommendedAffordabilityIndicator', 
+          window.mathExplanations.rateRecommendations.affordabilityAssessment(
+              recommendations.optimalRates?.avgBill || 0,
+              appState.medianIncome || 0,
+              appState.recommendationSettings?.EPA_AFFORDABILITY_THRESHOLD || 0.025
+          ));
       
-      // Recommended Average Bill
-      const recommendedAvgBill = appState.recommendedRates.avgBill || 0;
-      updateElementTooltip('recommendedAvgBill', 
-                         window.mathExplanations.advisor.recommendedAvgBill(
-                             recommendedAvgBill,
-                             appState.avgMonthlyUsage || 0
-                         ));
-      
-      // Recommended Affordability
-      updateElementTooltip('recommendedAffordabilityMHI', 
-                         window.mathExplanations.advisor.recommendedAffordabilityMHI(
-                             recommendedAvgBill,
-                             appState.medianIncome || 0
-                         ));
-      
-      // Recommended Tier Structure
-      if (appState.recommendedRates.tiers) {
-        appState.recommendedRates.tiers.forEach((tier, index) => {
-          // Tier limit explanation
-          const tierLimitId = `recommendedTier${index + 1}Limit`;
-          updateElementTooltip(tierLimitId, 
-                             window.mathExplanations.advisor.recommendedTierLimit(
-                                 tier.limit || 0,
-                                 index,
-                                 appState.futureTiers[index]?.limit || 0
-                             ));
+      // Year 1 recommendation tooltips (if they exist as separate elements)
+      if (recommendations.financialProjection && recommendations.financialProjection.length > 0) {
+          const year1 = recommendations.financialProjection.find(y => y.year === 1) || recommendations.financialProjection[0];
           
-          // Tier rate explanation
-          const tierRateId = `recommendedTier${index + 1}Rate`;
-          updateElementTooltip(tierRateId, 
-                             window.mathExplanations.advisor.recommendedTierRate(
-                                 tier.rate || 0,
-                                 index,
-                                 appState.futureTiers[index]?.rate || 0
-                             ));
-        });
+          // Add tooltips for the recommendation card elements
+          updateElementTooltip('recommendedBaseRate', 
+              window.mathExplanations.rateRecommendations.recommendedBaseRate(
+                  year1.baseRate,
+                  appState.currentBaseRate || 0,
+                  recommendations.optimalRates?.baseRate || year1.baseRate
+              ));
+          
+          updateElementTooltip('recommendedAddonFee', 
+              window.mathExplanations.rateRecommendations.recommendedAddonFee(
+                  year1.addonFee,
+                  appState.currentAddonFee || 0
+              ));
       }
       
-      // Year-by-Year Financial Projection Table
-      if (appState.projectionResults?.years) {
-        appState.projectionResults.years.forEach((year, i) => {
-          const yearState = {
-            operatingCost: appState.projectionResults.operatingCosts?.[i] || 0,
-            debtService: appState.projectionResults.debtService?.[i] || 0,
-            infrastructureFunding: appState.projectionResults.infrastructureFunding?.[i] || 0,
-            revenueNeeds: appState.projectionResults.revenueNeeds?.[i] || 0,
-            revenue: appState.projectionResults.revenue?.[i] || 0,
-            reserveBalance: appState.projectionResults.reserves?.[i] || 0
-          };
+      // UPDATE: Call the projection explanations to handle the table
+      updateProjectionExplanations();
+  }
+  /**
+   * Updates math explanations for financial projections
+   */
+  function updateProjectionExplanations() {
+      // UPDATE: Use the correct data source for rate recommendations
+      if (!appState.rateRecommendations || !appState.rateRecommendations.financialProjection) return;
+      
+      const projection = appState.rateRecommendations.financialProjection;
+      
+      // UPDATE: Use the correct table ID from your HTML
+      const projectionTable = document.getElementById('financialProjectionTable');
+      if (projectionTable) {
+          const headers = projectionTable.querySelectorAll('th');
+          headers.forEach((header, index) => {
+              if (index > 0) { // Skip the Year column
+                  const columnId = `projectionColumn_${index}`;
+                  header.id = columnId;
+                  updateElementTooltip(columnId, window.mathExplanations.financialProjection[getColumnExplanationKey(index)]);
+              }
+          });
+      }
+
+      // UPDATE: Use the correct projection data structure and add all the missing cell tooltips
+      projection.forEach(yearData => {
+          const year = yearData.year;
           
-          // Year column tooltip
-          updateElementTooltip(`projectionYear${year}`, 
-                             window.mathExplanations.financialProjection.yearlyProjection(year, yearState));
+          // Year cell tooltip
+          updateElementTooltip(`projectionYear_${year}`, 
+              window.mathExplanations.rateRecommendations.yearProjection(year, yearData));
           
-          // Individual cell tooltips for validation
+          // Rate structure tooltips
           updateElementTooltip(`projectionBaseRate_${year}`, 
-                             window.mathExplanations.financialProjection.transitionPlan(year));
+              window.mathExplanations.rateRecommendations.baseRateTransition(
+                  yearData.baseRate, 
+                  appState.currentBaseRate, 
+                  appState.rateRecommendations.optimalRates?.baseRate || yearData.baseRate,
+                  year
+              ));
           
           updateElementTooltip(`projectionAddonFee_${year}`, 
-                             window.mathExplanations.financialProjection.transitionPlan(year));
+              window.mathExplanations.rateRecommendations.addonFeeProjection(yearData.addonFee, year));
           
-          // Revenue projection validation
+          // Tier rate tooltips
+          updateElementTooltip(`projectionTier1Rate_${year}`, 
+              window.mathExplanations.rateRecommendations.tierRateTransition(
+                  1, yearData.tier1Rate, year, yearData
+              ));
+          
+          updateElementTooltip(`projectionTier1Limit_${year}`, 
+              window.mathExplanations.rateRecommendations.tierLimitProjection(
+                  1, yearData.tier1Limit, year
+              ));
+          
+          if (yearData.tier2Rate !== null) {
+              updateElementTooltip(`projectionTier2Rate_${year}`, 
+                  window.mathExplanations.rateRecommendations.tierRateTransition(
+                      2, yearData.tier2Rate, year, yearData
+                  ));
+              
+              updateElementTooltip(`projectionTier2Limit_${year}`, 
+                  window.mathExplanations.rateRecommendations.tierLimitProjection(
+                      2, yearData.tier2Limit, year
+                  ));
+          }
+          
+          if (yearData.tier3Rate !== null) {
+              updateElementTooltip(`projectionTier3Rate_${year}`, 
+                  window.mathExplanations.rateRecommendations.tierRateTransition(
+                      3, yearData.tier3Rate, year, yearData
+                  ));
+              
+              updateElementTooltip(`projectionTier3Limit_${year}`, 
+                  window.mathExplanations.rateRecommendations.tierLimitProjection(
+                      3, yearData.tier3Limit, year
+                  ));
+          }
+          
+          if (yearData.tier4Rate !== null) {
+              updateElementTooltip(`projectionTier4Rate_${year}`, 
+                  window.mathExplanations.rateRecommendations.tierRateTransition(
+                      4, yearData.tier4Rate, year, yearData
+                  ));
+          }
+          
+          // Financial planning tooltips
+          updateElementTooltip(`projectionCapitalImprovements_${year}`, 
+              window.mathExplanations.rateRecommendations.capitalImprovements(
+                  yearData.capitalImprovements, year
+              ));
+          
+          updateElementTooltip(`projectionGrants_${year}`, 
+              window.mathExplanations.rateRecommendations.grantsProjection(
+                  yearData.grants, year
+              ));
+          
+          updateElementTooltip(`projectionNewDebt_${year}`, 
+              window.mathExplanations.rateRecommendations.newDebtProjection(
+                  yearData.newDebt, year
+              ));
+          
+          // Revenue analysis tooltips
           updateElementTooltip(`projectionExpectedRevenue_${year}`, 
-                             window.mathExplanations.revenue.annualRevenue(
-                                 yearState.revenue / 12 / (appState.customerCount || 1), // Back-calculate monthly bill
-                                 appState.customerCount || 0,
-                                 yearState.revenue
-                             ));
+              window.mathExplanations.rateRecommendations.expectedRevenue(
+                  yearData.expectedRevenue, 
+                  yearData.customerCount || appState.customerCount,
+                  year,
+                  yearData
+              ));
           
           updateElementTooltip(`projectionNeededRevenue_${year}`, 
-                             window.mathExplanations.revenue.annualRevenueNeed(
-                                 yearState.operatingCost,
-                                 yearState.debtService,
-                                 yearState.infrastructureFunding,
-                                 0, // Grants handled separately
-                                 yearState.revenueNeeds
-                             ));
+              window.mathExplanations.rateRecommendations.neededRevenue(
+                  yearData.neededRevenue,
+                  yearData.operatingCost || appState.operatingCost,
+                  yearData.totalDebtService || 0,
+                  yearData.capitalImprovements || 0,
+                  yearData.grants || 0,
+                  year
+              ));
           
           updateElementTooltip(`projectionRevenueGap_${year}`, 
-                             window.mathExplanations.revenue.revenueGap(
-                                 yearState.revenue,
-                                 yearState.revenueNeeds,
-                                 yearState.revenue - yearState.revenueNeeds
-                             ));
+              window.mathExplanations.rateRecommendations.revenueGap(
+                  yearData.revenueGap,
+                  yearData.expectedRevenue,
+                  yearData.neededRevenue,
+                  year
+              ));
           
           updateElementTooltip(`projectionReserveBalance_${year}`, 
-                             window.mathExplanations.financialProjection.transitionPlan(year));
-        });
-      }
-    }
+              window.mathExplanations.rateRecommendations.reserveBalance(
+                  yearData.reserveBalance,
+                  appState.targetReserve || 0,
+                  year
+              ));
+          
+          updateElementTooltip(`projectionDebtService_${year}`, 
+              window.mathExplanations.rateRecommendations.debtServiceProjection(
+                  yearData.totalDebtService || 0,
+                  year
+              ));
+      });
+  }
   // MOVE THESE FUNCTIONS INSIDE HERE (remove the duplicates at the bottom):
   
   function updateBillBreakdownExplanations(prefix) {
@@ -916,5 +1525,20 @@ updateElementTooltip('currentYearGrants',
     const columnKeys = ['year', 'operatingCost', 'debtService', 'infrastructureReserve', 'revenue', 'reserves'];
     return columnKeys[index] || 'yearlyProjection';
   }
-
+function initializeAlgorithmOverview() {
+    const overviewButton = document.getElementById('algorithmOverviewTooltip');
+    if (overviewButton && window.mathExplanations?.rateRecommendations?.algorithmOverview) {
+        // Dispose of existing tooltip if any
+        const existingTooltip = bootstrap.Tooltip.getInstance(overviewButton);
+        if (existingTooltip) existingTooltip.dispose();
+        
+        // Create new tooltip with algorithm overview
+        new bootstrap.Tooltip(overviewButton, {
+            title: window.mathExplanations.rateRecommendations.algorithmOverview(),
+            html: true,
+            placement: 'left',
+            customClass: 'algorithm-overview-tooltip'
+        });
+    }
+}
 }); // <- End of DOMContentLoaded

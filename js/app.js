@@ -928,13 +928,13 @@ function setupRemoveButtonListeners() {
 /**
  * Update appState loans data from UI
  */
+// Modify existing updateLoansData function:
 function updateLoansData() {
   const loans = [];
   document.querySelectorAll(".loan-entry").forEach((entry) => {
     const name = entry.querySelector(".loan-name").value;
     const amount = parseFloat(entry.querySelector(".loan-amount").value) || 0;
-    const interest =
-      parseFloat(entry.querySelector(".loan-interest").value) || 0;
+    const interest = parseFloat(entry.querySelector(".loan-interest").value) || 0;
     const term = parseFloat(entry.querySelector(".loan-term").value) || 0;
     const year = parseInt(entry.querySelector(".loan-year")?.value) || 0;
     loans.push({
@@ -943,16 +943,20 @@ function updateLoansData() {
       interest,
       term,
       year,
-      existing: true, // Add this property to indicate an existing loan
+      existing: true,
     });
   });
   appState.loans = loans;
-  calculateAll(); // Use the correct calculation function
+  
+  // Disable math mode since data changed
+  if (window.disableMathMode && typeof window.disableMathMode === 'function') {
+    window.disableMathMode();
+  }
+  
+  calculateAll(); // This will now also disable math mode
 }
 
-/**
- * Update appState projects data from UI
- */
+// Apply the same pattern to updateProjectsData and updateGrantsData:
 function updateProjectsData() {
   appState.projects = [];
 
@@ -969,11 +973,13 @@ function updateProjectsData() {
       funding: funding,
     });
   });
+  
+  // Disable math mode since data changed
+  if (window.disableMathMode && typeof window.disableMathMode === 'function') {
+    window.disableMathMode();
+  }
 }
 
-/**
- * Update appState grants data from UI
- */
 function updateGrantsData() {
   appState.grants = [];
 
@@ -988,12 +994,21 @@ function updateGrantsData() {
       year: year,
     });
   });
+  
+  // Disable math mode since data changed
+  if (window.disableMathMode && typeof window.disableMathMode === 'function') {
+    window.disableMathMode();
+  }
 }
 
 /**
  * Calculate everything and update displays
  */
 function calculateAll() {
+    // Disable math mode when calculations change (add this at the beginning)
+  if (window.disableMathMode && typeof window.disableMathMode === 'function') {
+    window.disableMathMode();
+  }
   // Update financial planning state first
   if (typeof updateFinancialPlanningState === "function") {
     updateFinancialPlanningState();

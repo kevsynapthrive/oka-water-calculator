@@ -564,3 +564,36 @@ body {
     right: 70px !important;
   }
 }
+/* Add to your CSS file */
+.toggle-chevron {
+    transition: transform 0.3s ease;
+}
+
+.algorithm-overview-btn[aria-expanded="true"] .toggle-chevron {
+    transform: rotate(180deg);
+}
+
+.algorithm-overview-section {
+    font-size: 0.9rem;
+}
+
+.algorithm-overview-section .border {
+    border-color: #dee2e6 !important;
+}
+
+.algorithm-overview-section .table td {
+    border: none;
+    padding: 0.25rem 0.5rem;
+}
+
+.algorithm-overview-section .table td:first-child {
+    padding-left: 0;
+}
+/* Add this CSS to automatically show the section when math mode is active */
+.show-math-explanations #algorithmOverviewSection {
+    display: block !important;
+}
+
+.show-math-explanations #algorithmOverviewToggle[aria-expanded="false"] .toggle-chevron {
+    transform: rotate(180deg);
+}
