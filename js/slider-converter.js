@@ -130,8 +130,17 @@ function initializeSliders() {
         rangeContainer.appendChild(minMaxContainer);
         
         // Replace the number input with the slider container
-        input.parentNode.replaceChild(sliderContainer, input);
+        const parentContainer = input.closest('.input-group') || input.parentNode;
+        const containerToReplace = input.closest('.input-group') ? input.closest('.input-group') : input;
+
+        // Create the slider container
+        parentContainer.replaceChild(sliderContainer, containerToReplace);
         sliderContainer.appendChild(rangeContainer);
+
+        // If this was in an input group, preserve any important styling context
+        if (input.closest('.mb-3')) {
+            sliderContainer.classList.add('mb-3');
+        }
         
         // Add event listener to update the display
         rangeInput.addEventListener('input', function() {

@@ -665,53 +665,61 @@ function updateCompareUsageLevels() {
 function addLoanEntry(loanData) {
   const loansContainer = document.getElementById("loansContainer");
 
-  // Create new loan entry
   const loanEntry = document.createElement("div");
   loanEntry.className = "loan-entry card mb-3";
   loanEntry.innerHTML = `
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-3">
-                    <div class="mb-3">
-                        <label class="form-label">Loan Name</label>
-                        <input type="text" class="form-control loan-name" placeholder="Loan name">
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="mb-3">
-                        <label class="form-label">Amount ($)</label>
-                        <input type="number" class="form-control loan-amount" placeholder="0">
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="mb-3">
-                        <label class="form-label">Interest Rate (%)</label>
-                        <input type="number" class="form-control loan-interest" placeholder="0">
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="mb-3">
-                        <label class="form-label">Term (years)</label>
-                        <input type="number" class="form-control loan-term" placeholder="0">
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="mb-3">
-                        <label class="form-label">Start Year</label>
-                        <input type="number" class="form-control loan-year" placeholder="0">
-                    </div>
-                </div>
-                <div class="col-md-1">
-                    <button class="btn btn-danger mt-4 remove-loan">Remove</button>
-                </div>
-            </div>
+    <div class="card-header bg-light py-2">
+      <h6 class="mb-0">
+        <i class="bi bi-bank me-2"></i>
+        <span class="loan-title">${loanData?.name || 'New Loan'}</span>
+      </h6>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-3">
+          <div class="mb-3">
+            <label class="form-label">Loan Name</label>
+            <input type="text" class="form-control loan-name" placeholder="e.g., USDA Rural Development Loan">
+          </div>
         </div>
-    `;
+        <div class="col-md-2">
+          <div class="mb-3">
+            <label class="form-label">Amount ($)</label>
+            <input type="number" class="form-control loan-amount" placeholder="0" step="1000">
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="mb-3">
+            <label class="form-label">Interest Rate (%)</label>
+            <input type="number" class="form-control loan-interest" placeholder="3.0" step="0.1">
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="mb-3">
+            <label class="form-label">Term (years)</label>
+            <input type="number" class="form-control loan-term" placeholder="20">
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="mb-3">
+            <label class="form-label">Start Year</label>
+            <input type="number" class="form-control loan-year" placeholder="${new Date().getFullYear()}">
+          </div>
+        </div>
+        <div class="col-md-1">
+          <div class="mb-3">
+            <label class="form-label">&nbsp;</label>
+            <button class="btn btn-outline-danger btn-sm remove-loan d-block">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 
-  // Add entry to container
   loansContainer.appendChild(loanEntry);
 
-  // Pre-fill with data if provided
   if (loanData) {
     loanEntry.querySelector(".loan-name").value = loanData.name || "";
     loanEntry.querySelector(".loan-amount").value = loanData.amount || 0;
@@ -720,9 +728,15 @@ function addLoanEntry(loanData) {
     loanEntry.querySelector(".loan-year").value = loanData.year || 0;
   }
 
-  // Update appState with current loan data
+  const nameInput = loanEntry.querySelector('.loan-name');
+  nameInput.addEventListener('input', function() {
+    const titleSpan = loanEntry.querySelector('.loan-title');
+    titleSpan.textContent = this.value || 'New Loan';
+  });
+
   updateLoansData();
 }
+
 /**
  * Add a new project entry to the UI and appState
  * @param {Object} projectData - Optional project data to pre-fill the entry
@@ -730,59 +744,71 @@ function addLoanEntry(loanData) {
 function addProjectEntry(projectData) {
   const projectsContainer = document.getElementById("projectsContainer");
 
-  // Create new project entry
   const projectEntry = document.createElement("div");
   projectEntry.className = "project-entry card mb-3";
   projectEntry.innerHTML = `
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-3">
-                    <div class="mb-3">
-                        <label class="form-label">Project Name</label>
-                        <input type="text" class="form-control project-name" placeholder="Project name">
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="mb-3">
-                        <label class="form-label">Cost ($)</label>
-                        <input type="number" class="form-control project-cost" placeholder="0">
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="mb-3">
-                        <label class="form-label">Project Year</label>
-                        <input type="number" class="form-control project-year" placeholder="0">
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="mb-3">
-                        <label class="form-label">Funding Source</label>
-                        <select class="form-select project-funding">
-                            <option value="reserves">Reserves</option>
-                            <option value="loan">Loan/Debt</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <button class="btn btn-danger mt-4 remove-project">Remove</button>
-                </div>
-            </div>
+    <div class="card-header bg-light py-2">
+      <h6 class="mb-0">
+        <i class="bi bi-tools me-2"></i>
+        <span class="project-title">${projectData?.name || 'New Project'}</span>
+      </h6>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-3">
+          <div class="mb-3">
+            <label class="form-label">Project Name</label>
+            <input type="text" class="form-control project-name" placeholder="e.g., Water Main Replacement">
+          </div>
         </div>
-    `;
+        <div class="col-md-3">
+          <div class="mb-3">
+            <label class="form-label">Cost ($)</label>
+            <input type="number" class="form-control project-cost" placeholder="0" step="1000">
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="mb-3">
+            <label class="form-label">Project Year</label>
+            <input type="number" class="form-control project-year" placeholder="${new Date().getFullYear() + 1}">
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="mb-3">
+            <label class="form-label">Funding Source</label>
+            <select class="form-select project-funding">
+              <option value="reserves">Reserves</option>
+              <option value="loan">Loan/Debt</option>
+            </select>
+          </div>
+        </div>
+        <div class="col-md-1">
+          <div class="mb-3">
+            <label class="form-label">&nbsp;</label>
+            <button class="btn btn-outline-danger btn-sm remove-project d-block">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 
-  // Add entry to container
   projectsContainer.appendChild(projectEntry);
 
-  // Pre-fill with data if provided
   if (projectData) {
     projectEntry.querySelector(".project-name").value = projectData.name || "";
     projectEntry.querySelector(".project-cost").value = projectData.cost || 0;
     projectEntry.querySelector(".project-year").value = projectData.year || 0;
-    projectEntry.querySelector(".project-funding").value =
-      projectData.funding || "reserves";
+    projectEntry.querySelector(".project-funding").value = projectData.funding || "reserves";
   }
 
-  // Update appState with current project data
+  const nameInput = projectEntry.querySelector('.project-name');
+  nameInput.addEventListener('input', function() {
+    const titleSpan = projectEntry.querySelector('.project-title');
+    titleSpan.textContent = this.value || 'New Project';
+  });
+
   updateProjectsData();
 }
 
@@ -793,48 +819,61 @@ function addProjectEntry(projectData) {
 function addGrantEntry(grantData) {
   const grantsContainer = document.getElementById("grantsContainer");
 
-  // Create new grant entry
   const grantEntry = document.createElement("div");
   grantEntry.className = "grant-entry card mb-3";
   grantEntry.innerHTML = `
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="mb-3">
-                        <label class="form-label">Grant/Subsidy Name</label>
-                        <input type="text" class="form-control grant-name" placeholder="Grant name">
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="mb-3">
-                        <label class="form-label">Amount ($)</label>
-                        <input type="number" class="form-control grant-amount" placeholder="0">
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="mb-3">
-                        <label class="form-label">Year</label>
-                        <input type="number" class="form-control grant-year" placeholder="0">
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <button class="btn btn-danger mt-4 remove-grant">Remove</button>
-                </div>
-            </div>
+    <div class="card-header bg-light py-2">
+      <h6 class="mb-0">
+        <i class="bi bi-gift me-2"></i>
+        <span class="grant-title">${grantData?.name || 'New Grant'}</span>
+      </h6>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label class="form-label">Grant/Subsidy Name</label>
+            <input type="text" class="form-control grant-name" placeholder="e.g., USDA Community Facilities Grant">
+          </div>
         </div>
-    `;
+        <div class="col-md-3">
+          <div class="mb-3">
+            <label class="form-label">Amount ($)</label>
+            <input type="number" class="form-control grant-amount" placeholder="0" step="1000">
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="mb-3">
+            <label class="form-label">Year</label>
+            <input type="number" class="form-control grant-year" placeholder="${new Date().getFullYear() + 1}">
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="mb-3">
+            <label class="form-label">&nbsp;</label>
+            <button class="btn btn-outline-danger btn-sm remove-grant d-block">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 
-  // Add entry to container
   grantsContainer.appendChild(grantEntry);
 
-  // Pre-fill with data if provided
   if (grantData) {
     grantEntry.querySelector(".grant-name").value = grantData.name || "";
     grantEntry.querySelector(".grant-amount").value = grantData.amount || 0;
     grantEntry.querySelector(".grant-year").value = grantData.year || 0;
   }
 
-  // Update appState with current grant data
+  const nameInput = grantEntry.querySelector('.grant-name');
+  nameInput.addEventListener('input', function() {
+    const titleSpan = grantEntry.querySelector('.grant-title');
+    titleSpan.textContent = this.value || 'New Grant';
+  });
+
   updateGrantsData();
 }
 
@@ -846,7 +885,46 @@ function setupRemoveButtonListeners() {
   // No longer needed as we're using event delegation in financial-planning.js
   // This function is kept empty for backward compatibility
 }
-
+/**
+ * Setup remove button listeners for existing entries
+ */
+function setupRemoveButtonListeners() {
+  // Use event delegation to handle dynamically added remove buttons
+  document.addEventListener('click', function(e) {
+    // Handle loan removal
+    if (e.target.closest('.remove-loan')) {
+      e.preventDefault();
+      const loanEntry = e.target.closest('.loan-entry');
+      if (loanEntry) {
+        loanEntry.remove();
+        updateLoansData();
+        calculateAll(); // Recalculate after removal
+      }
+    }
+    
+    // Handle project removal
+    if (e.target.closest('.remove-project')) {
+      e.preventDefault();
+      const projectEntry = e.target.closest('.project-entry');
+      if (projectEntry) {
+        projectEntry.remove();
+        updateProjectsData();
+        calculateAll(); // Recalculate after removal
+      }
+    }
+    
+    // Handle grant removal
+    if (e.target.closest('.remove-grant')) {
+      e.preventDefault();
+      const grantEntry = e.target.closest('.grant-entry');
+      if (grantEntry) {
+        grantEntry.remove();
+        updateGrantsData();
+        calculateAll(); // Recalculate after removal
+      }
+    }
+  });
+}
 /**
  * Update appState loans data from UI
  */

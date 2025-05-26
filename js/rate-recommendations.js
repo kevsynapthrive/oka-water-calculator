@@ -641,7 +641,7 @@ function updateOptimalRateCard() {
     // Update title
     const titleElement = document.querySelector('#recommendationsCard .card-header');
     if (titleElement) {
-        titleElement.innerHTML = '<i class="bi bi-award"></i> Recommended Rate Implementation Plan';
+        titleElement.innerHTML = '<h4 class="card-title mb-0"><i class="bi bi-award"></i> Recommended Rate Implementation Plan</h4>';
     }
     
     // Create the HTML for the card content
@@ -760,7 +760,7 @@ function updateOptimalRateCard() {
                             </li>` : ''}
                         </ul>
                         <div class="d-grid">
-                            <button hidden id="copyFromAdvisor" class="btn btn-primary">Apply to What-If Scenario</button>
+                            <button  id="copyFromAdvisor" class="btn btn-primary">Apply to What-If Scenario</button>
                         </div>
                     </div>
                 </div>
@@ -905,46 +905,109 @@ function renderFinancialProjectionTable() {
 
     projection.forEach(yearData => {
         const row = tableBody.insertRow();
-        row.insertCell().textContent = yearData.year;
-        row.insertCell().textContent = '$' + roundToCurrency(yearData.baseRate).toFixed(2);
-        row.insertCell().textContent = '$' + roundToCurrency(yearData.addonFee).toFixed(2);
-        row.insertCell().textContent = '$' + roundToCurrency(yearData.tier1Rate).toFixed(2);
-        row.insertCell().textContent = yearData.tier1Limit === null ? 'N/A' : (yearData.tier1Limit?.toLocaleString() || '-');
-        row.insertCell().textContent = yearData.tier2Rate !== null ? '$' + roundToCurrency(yearData.tier2Rate).toFixed(2) : '-';
-        row.insertCell().textContent = yearData.tier2Limit === null ? 'N/A' : (yearData.tier2Limit?.toLocaleString() || '-');
         
-        // Add Tier 3 Rate and Limit columns
-        row.insertCell().textContent = yearData.tier3Rate !== null ? '$' + roundToCurrency(yearData.tier3Rate).toFixed(2) : '-';
-        row.insertCell().textContent = yearData.tier3Limit === null ? 'N/A' : (yearData.tier3Limit?.toLocaleString() || '-');
+        // Add year cell with ID
+        let cell = row.insertCell();
+        cell.textContent = yearData.year;
+        cell.id = `projectionYear_${yearData.year}`;
         
-        // Add Tier 4 Rate column (Tier 4 doesn't have a limit as it's unlimited)
-        row.insertCell().textContent = yearData.tier4Rate !== null ? '$' + roundToCurrency(yearData.tier4Rate).toFixed(2) : '-';
-        // Removed the cell for Tier 4 Limit since it's always unlimited
+        // Add base rate cell with ID
+        cell = row.insertCell();
+        cell.textContent = '$' + roundToCurrency(yearData.baseRate).toFixed(2);
+        cell.id = `projectionBaseRate_${yearData.year}`;
         
-        row.insertCell().textContent = yearData.capitalImprovements > 0 ? '$' + Math.round(yearData.capitalImprovements).toLocaleString() : '-';
-        row.insertCell().textContent = yearData.grants > 0 ? '$' + Math.round(yearData.grants).toLocaleString() : '-';
-        row.insertCell().textContent = yearData.newDebt > 0 ? '$' + Math.round(yearData.newDebt).toLocaleString() : '-';
+        // Add addon fee cell with ID
+        cell = row.insertCell();
+        cell.textContent = '$' + roundToCurrency(yearData.addonFee).toFixed(2);
+        cell.id = `projectionAddonFee_${yearData.year}`;
         
-        row.insertCell().textContent = '$' + Math.round(yearData.expectedRevenue).toLocaleString();
-        row.insertCell().textContent = '$' + Math.round(yearData.neededRevenue).toLocaleString();
+        // Add tier rates and limits with IDs
+        cell = row.insertCell();
+        cell.textContent = '$' + roundToCurrency(yearData.tier1Rate).toFixed(2);
+        cell.id = `projectionTier1Rate_${yearData.year}`;
+        
+        cell = row.insertCell();
+        cell.textContent = yearData.tier1Limit === null ? 'N/A' : (yearData.tier1Limit?.toLocaleString() || '-');
+        cell.id = `projectionTier1Limit_${yearData.year}`;
+        
+        cell = row.insertCell();
+        cell.textContent = yearData.tier2Rate !== null ? '$' + roundToCurrency(yearData.tier2Rate).toFixed(2) : '-';
+        cell.id = `projectionTier2Rate_${yearData.year}`;
+        
+        cell = row.insertCell();
+        cell.textContent = yearData.tier2Limit === null ? 'N/A' : (yearData.tier2Limit?.toLocaleString() || '-');
+        cell.id = `projectionTier2Limit_${yearData.year}`;
+        
+        // Tier 3 Rate and Limit columns
+        cell = row.insertCell();
+        cell.textContent = yearData.tier3Rate !== null ? '$' + roundToCurrency(yearData.tier3Rate).toFixed(2) : '-';
+        cell.id = `projectionTier3Rate_${yearData.year}`;
+        
+        cell = row.insertCell();
+        cell.textContent = yearData.tier3Limit === null ? 'N/A' : (yearData.tier3Limit?.toLocaleString() || '-');
+        cell.id = `projectionTier3Limit_${yearData.year}`;
+        
+        // Tier 4 Rate column (Tier 4 doesn't have a limit as it's unlimited)
+        cell = row.insertCell();
+        cell.textContent = yearData.tier4Rate !== null ? '$' + roundToCurrency(yearData.tier4Rate).toFixed(2) : '-';
+        cell.id = `projectionTier4Rate_${yearData.year}`;
+        
+        // Add capital improvements cell with ID
+        cell = row.insertCell();
+        cell.textContent = yearData.capitalImprovements > 0 ? '$' + Math.round(yearData.capitalImprovements).toLocaleString() : '-';
+        cell.id = `projectionCapitalImprovements_${yearData.year}`;
+        
+        // Add grants cell with ID
+        cell = row.insertCell();
+        cell.textContent = yearData.grants > 0 ? '$' + Math.round(yearData.grants).toLocaleString() : '-';
+        cell.id = `projectionGrants_${yearData.year}`;
+        
+        // Add new debt cell with ID
+        cell = row.insertCell();
+        cell.textContent = yearData.newDebt > 0 ? '$' + Math.round(yearData.newDebt).toLocaleString() : '-';
+        cell.id = `projectionNewDebt_${yearData.year}`;
+        
+        // Add expected revenue cell with ID
+        cell = row.insertCell();
+        cell.textContent = '$' + Math.round(yearData.expectedRevenue).toLocaleString();
+        cell.id = `projectionExpectedRevenue_${yearData.year}`;
+        
+        // Add needed revenue cell with ID
+        cell = row.insertCell();
+        cell.textContent = '$' + Math.round(yearData.neededRevenue).toLocaleString();
+        cell.id = `projectionNeededRevenue_${yearData.year}`;
 
+        // Add revenue gap cell with ID
         const gapCell = row.insertCell();
         gapCell.textContent = '$' + Math.round(yearData.revenueGap).toLocaleString();
-        gapCell.className = yearData.revenueGap >= -0.01 ? 'text-success' : 'text-danger'; 
+        gapCell.className = yearData.revenueGap >= -0.01 ? 'text-success' : 'text-danger';
+        gapCell.id = `projectionRevenueGap_${yearData.year}`;
         
+        // Add reserve balance cell with ID
         const reserveCell = row.insertCell();
         reserveCell.textContent = '$' + Math.round(yearData.reserveBalance).toLocaleString();
         if (appState.targetReserve && yearData.reserveBalance >= appState.targetReserve) reserveCell.classList.add('text-success');
         else if (yearData.reserveBalance < 0) reserveCell.classList.add('text-danger');
+        reserveCell.id = `projectionReserveBalance_${yearData.year}`;
         
+        // Add debt service cell with ID
         const debtServiceCell = row.insertCell();
         debtServiceCell.innerHTML = `${formatCurrency(yearData.totalDebtService || 0)}
             <a href="javascript:void(0);" class="small ms-2" data-bs-toggle="tooltip" data-bs-html="true" title="Total Debt Service: ${formatCurrency(yearData.totalDebtService || 0)}">
                 <i class="bi bi-info-circle"></i>
             </a>`;
+        debtServiceCell.id = `projectionDebtService_${yearData.year}`;
     });
+    
+    // Make sure the table itself has an ID
+    const projectionTable = document.getElementById('projectionTable');
+    if (projectionTable && !projectionTable.id) {
+        projectionTable.id = 'projectionTable';
+    }
+    
     initializeTooltips();
-}function initializeTooltips() {
+}
+function initializeTooltips() {
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipTriggerList.forEach(function (tooltipTriggerEl) {
         const existingTooltip = bootstrap.Tooltip.getInstance(tooltipTriggerEl);

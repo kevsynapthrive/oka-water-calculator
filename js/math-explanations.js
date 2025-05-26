@@ -14,6 +14,24 @@ window.mathExplanations = {
   
   // 1. Monthly Bill Breakdown explanations
   billBreakdown: {
+
+      baseRateValidation: (calculatedCost, baseRate) => {
+    return `<div class="math-tooltip">
+      <p><strong>Base Rate Cost Validation</strong></p>
+      <p><u>Applied Rate</u>: $${baseRate.toFixed(2)} per month</p>
+      <p><u>Calculation</u>: Fixed monthly charge</p>
+      <p><u>Validated Result</u>: $${calculatedCost.toFixed(2)}</p>
+    </div>`;
+  },
+  
+  addonFeeValidation: (calculatedCost, addonFee) => {
+    return `<div class="math-tooltip">
+      <p><strong>Add-on Fee Cost Validation</strong></p>
+      <p><u>Applied Fee</u>: $${addonFee.toFixed(2)} per month</p>
+      <p><u>Calculation</u>: Fixed monthly charge</p>
+      <p><u>Validated Result</u>: $${calculatedCost.toFixed(2)}</p>
+    </div>`;
+  },
     baseRate: (calculatedBaseRateCost) => {
       return `<div class="math-tooltip">
         <p><strong>Base Rate Cost Validation</strong></p>
@@ -93,6 +111,31 @@ tierCost: (tierIndex, tierBreakdown) => {
   },
   
   // 2. Affordability Analysis explanations
+  affordabilityValidation: {
+  currentAffordability: (totalBill, medianIncome, percentage) => {
+    const monthlyMHI = medianIncome / 12;
+    return `<div class="math-tooltip">
+      <p><strong>Current Affordability Validation</strong></p>
+      <p><u>Monthly Bill</u>: $${totalBill.toFixed(2)}</p>
+      <p><u>Monthly MHI</u>: $${monthlyMHI.toFixed(2)}</p>
+      <p><u>Formula</u>: (Bill ÷ Monthly MHI) × 100%</p>
+      <p><u>Calculation</u>: ($${totalBill.toFixed(2)} ÷ $${monthlyMHI.toFixed(2)}) × 100%</p>
+      <p><u>Validated Result</u>: ${percentage.toFixed(2)}% of MHI</p>
+    </div>`;
+  },
+  
+  futureAffordability: (totalBill, medianIncome, percentage) => {
+    const monthlyMHI = medianIncome / 12;
+    return `<div class="math-tooltip">
+      <p><strong>Future Affordability Validation</strong></p>
+      <p><u>Monthly Bill</u>: $${totalBill.toFixed(2)}</p>
+      <p><u>Monthly MHI</u>: $${monthlyMHI.toFixed(2)}</p>
+      <p><u>Formula</u>: (Bill ÷ Monthly MHI) × 100%</p>
+      <p><u>Calculation</u>: ($${totalBill.toFixed(2)} ÷ $${monthlyMHI.toFixed(2)}) × 100%</p>
+      <p><u>Validated Result</u>: ${percentage.toFixed(2)}% of MHI</p>
+    </div>`;
+  }
+},
   affordability: {
       percentOfMHI: (monthlyBill, annualMHI, calculatedMonthlyMHI, calculatedPercentage) => {
         return `<div class="math-tooltip">
@@ -281,7 +324,17 @@ tierCost: (tierIndex, tierBreakdown) => {
         <p><u>Validated Result</u>: $${formatNumber(numCalculatedReserve.toFixed(2))} annual infrastructure reserve</p>
       </div>`;
     },
-  
+    grantFunding: (calculatedGrants, description) => {
+    const numCalculatedGrants = Number(calculatedGrants) || 0;
+    
+    return `<div class="math-tooltip">
+      <p><strong>Grant Funding Calculation Validation</strong></p>
+      <p><u>Description</u>: ${description || 'Grant assistance for current year'}</p>
+      <p><u>Grant Amount</u>: $${formatNumber(numCalculatedGrants.toFixed(2))}</p>
+      <p><u>Methodology</u>: Direct input from grant funding sources</p>
+      <p><u>Validated Result</u>: $${formatNumber(numCalculatedGrants.toFixed(2))} annual grant funding</p>
+    </div>`;
+  },
     yearlyGrants: (calculatedGrants, grants, year) => {
       const numCalculatedGrants = Number(calculatedGrants) || 0;
       const numYear = Number(year) || 0;
@@ -297,7 +350,20 @@ tierCost: (tierIndex, tierBreakdown) => {
         <p><u>Validated Result</u>: $${formatNumber(numCalculatedGrants.toFixed(2))} total grant funding</p>
       </div>`;
     },
-    
+        currentYearGrants: (calculatedGrants, grants) => {
+      const numCalculatedGrants = Number(calculatedGrants) || 0;
+      
+      return `<div class="math-tooltip">
+        <p><strong>Current Year Grant Funding Calculation Validation</strong></p>
+        <p><u>Analysis Year</u>: 0 (Current Year)</p>
+        <p><u>Grant Sources</u>:</p>
+        <ul>
+          <li>Total Grant Funding for Current Year: $${formatNumber(numCalculatedGrants.toFixed(2))}</li>
+        </ul>
+        <p><u>Methodology</u>: Sum of all grants scheduled for current year (Year 0)</p>
+        <p><u>Validated Result</u>: $${formatNumber(numCalculatedGrants.toFixed(2))} total current year grant funding</p>
+      </div>`;
+    },
     netRevenueNeed: (calculatedNetNeed, operatingCost, debtService, infrastructureReserve, grants) => {
       const numCalculatedNetNeed = Number(calculatedNetNeed) || 0;
       const numOperatingCost = Number(operatingCost) || 0;
@@ -1203,7 +1269,14 @@ tierCost: (tierIndex, tierBreakdown) => {
           <p><u>Validated Result</u>: $${baseRate.toFixed(2)} per month per customer</p>
         </div>`;
       },
-      
+        implementationPhase: (phase) => {
+    return `<div class="math-tooltip">
+      <p><strong>Implementation Phase ${phase.year}</strong></p>
+      <p><u>Timeline</u>: ${phase.description}</p>
+      <p><u>Rate Changes</u>: ${phase.changes}</p>
+      <p><u>Expected Impact</u>: ${phase.impact}</p>
+    </div>`;
+  },
       recommendedAddonFee: (addonFee, currentAddonFee, methodology) => {
         const difference = addonFee - currentAddonFee;
         const percentChange = currentAddonFee !== 0 ? (difference / currentAddonFee) * 100 : 0;
@@ -1310,7 +1383,45 @@ tierCost: (tierIndex, tierBreakdown) => {
       }
   },
   
+keyMetrics: {
+  billChange: (currentBill, futureBill) => {
+    const change = futureBill - currentBill;
+    const percentChange = currentBill > 0 ? (change / currentBill) * 100 : 0;
+    
+    return `<div class="math-tooltip">
+      <p><strong>Average Bill Change Validation</strong></p>
+      <p><u>Current Bill</u>: $${currentBill.toFixed(2)}</p>
+      <p><u>Future Bill</u>: $${futureBill.toFixed(2)}</p>
+      <p><u>Change</u>: $${change.toFixed(2)} (${percentChange >= 0 ? '+' : ''}${percentChange.toFixed(1)}%)</p>
+    </div>`;
+  },
+  
+  revenueChange: (currentRevenue, futureRevenue) => {
+    const change = futureRevenue - currentRevenue;
+    const percentChange = currentRevenue > 0 ? (change / currentRevenue) * 100 : 0;
+    
+    return `<div class="math-tooltip">
+      <p><strong>Revenue Change Validation</strong></p>
+      <p><u>Current Revenue</u>: $${formatNumber(currentRevenue.toFixed(2))}</p>
+      <p><u>Future Revenue</u>: $${formatNumber(futureRevenue.toFixed(2))}</p>
+      <p><u>Change</u>: $${formatNumber(change.toFixed(2))} (${percentChange >= 0 ? '+' : ''}${percentChange.toFixed(1)}%)</p>
+    </div>`;
+  }
+},
+
   // Add the financial projection explanations:
+  projections: {
+  yearProjection: (year, data) => {
+    return `<div class="math-tooltip">
+      <p><strong>Year ${year} Financial Projection Validation</strong></p>
+      <p><u>Revenue Need</u>: $${formatNumber(data.revenueNeed?.toFixed(2) || 0)}</p>
+      <p><u>Expected Revenue</u>: $${formatNumber(data.revenue?.toFixed(2) || 0)}</p>
+      <p><u>Reserve Balance</u>: $${formatNumber(data.reserveBalance?.toFixed(2) || 0)}</p>
+      <p><u>Debt Service</u>: $${formatNumber(data.totalDebtService?.toFixed(2) || 0)}</p>
+      <p><u>Calculation Method</u>: Uses inflation-adjusted costs and transitioning rate structure</p>
+    </div>`;
+  }
+},
   financialProjection: {
       yearlyProjection: (year, yearState) => {
         return `<div class="math-tooltip">
