@@ -16,7 +16,7 @@ function initializeSliders() {
     const sliderFields = [
         { id: 'medianIncome', min: 20000, max: 200000, step: 1000, suffix: '$', prefix: true },
         { id: 'povertyIncome', min: 10000, max: 50000, step: 500, suffix: '$', prefix: true },
-        { id: 'customerCount', min: 50, max: 20000, step: 100, suffix: '' },
+        { id: 'customerCount', min: 50, max: 20000, step: 1, suffix: '' },
         { id: 'avgMonthlyUsage', min: 1000, max: 30000, step: 500, suffix: ' gal' },
         { id: 'operatingCost', min: 10000, max: 7500000, step: 10000, suffix: '$', prefix: true },
         { id: 'debtPayments', min: 0, max: 5000000, step: 10000, suffix: '$', prefix: true },
